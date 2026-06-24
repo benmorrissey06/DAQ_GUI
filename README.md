@@ -57,3 +57,19 @@ Mac / Linux:
 ```bash
 python3 gui.py
 ```
+
+## Key Features
+
+```bash
+Convenient integration of input & output triggers when recording from the gui
+
+Ability to define file name, path, and recording duration from the gui
+
+Ability to set timed UV light controls (e.g. 0-20s no UV light, 20-40s UV set to 250, 40+s UV set to 230) during a recording from the gui
+
+Better visualization of the ambient light sensor could be nice, e.g. simultaneous plotting of ambient light and IR light
+
+Integration of closed loop TTL outputs when IR light drops below or goes above a set threshold, with customizable stimulation parameters (pulse freq, width, etc.)
+
+Package gui in an executable program
+```
