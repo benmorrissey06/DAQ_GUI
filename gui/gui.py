@@ -60,9 +60,11 @@ class GUI:
             dpg.configure_item("plot_vis", show=False)
 
     def start_recording(self,sender,app_data,user_data):
+        self.file_path=dpg.get_value("filepath") #Save filepath, maybe have file expolorer open instead?
         pass
         #self.daq.begin_recording()
-    
+    '''
+    This function is unnecessary once we have prepare_recording
     def store_segment(self,sender,app_data,user_data):
         self.time_stamps.clear()
         self.light_values.clear()
@@ -74,7 +76,7 @@ class GUI:
             
             self.time_stamps.append((start_val, end_val))
             self.light_values.append(uv_val)
-    
+    '''
     def update_recording_duration(self, sender, app_data, user_data):
         self.recording_duration = app_data
 
@@ -175,7 +177,7 @@ class GUI:
                                 dpg.add_text("")
                             dpg.add_spacer(height=10)
                             dpg.add_input_text(label = "File path",tag = "filepath")
-                            self.file_path=dpg.get_value("filepath") #Save filepath, maybe have file expolorer open instead?
+                            
                             dpg.add_button(label="START",callback=self.start_recording)
                             dpg.add_separator()
                             dpg.add_text("TTL Outputs")
