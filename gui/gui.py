@@ -1,7 +1,7 @@
 import dearpygui.dearpygui as dpg
 import threading
 import time
-#from daq import DAQController  (Will implement tis later)
+from daq import DAQController  
 '''
 currently commenting out all DAQ references so we can test GUI before that is finished.
 '''
@@ -11,7 +11,7 @@ VIS_LED_MAX = 4095
 
 class GUI:
     def __init__(self):
-        #self.daq = DAQController()
+        self.daq = DAQController()
         self.is_live = False
         self.running = True
 
@@ -25,6 +25,21 @@ class GUI:
         self.time_stamps = []
         self.recording_duration = 0.0
         self.active_rows = []
+
+
+        '''
+        Variables for trigger integration and TTL 
+        '''
+        self.wait_for_input = False
+        self.input_pin = ""
+        self.send_output = False
+        self.output_pin = ""
+        
+        self.ttl_enabled = False
+        self.ttl_condition = ""
+        self.ttl_threshold = 0
+        self.ttl_freq = 0.0
+        self.ttl_width = 0.0
 
         #When implementing custom recording controls, this labels each segment of time
         self.segment_counter = 1
@@ -86,18 +101,28 @@ class GUI:
             self.active_rows.remove(user_data)
         dpg.delete_item(user_data)
     
+    def live_plot_toggle(self, sender, app_data, user_data):
+        self.is_live = not self.is_live
+        label = "ON" if self.is_live else "OFF"
+        dpg.configure_item("live_button", label=label)
+        if self.is_live:
+            self.daq.start_live_chart
+            pass
+        else:
+            #self.daq.turn_off()
+            pass
 
     def add_recording_segment(self, app_data, user_data):
-        #add a new segment under custom recording controls
+        #add a new segment under custom recording controls, where you can set start time, stop time, and the gain during that period
         self.segment_counter+=1
         row_tag = f"row_{self.segment_counter}"
         self.active_rows.append(row_tag)
 
         with dpg.group(horizontal=True, parent="protocol_group", tag=row_tag):
             dpg.add_separator()
-            dpg.add_input_int(label="Start (s)", width=100, step=0, tag=f"start_{self.segment_counter}",callback = self.store_segment)
-            dpg.add_input_int(label="End (s)", width=100, step=0, tag=f"end_{self.segment_counter}",callback =self.store_segment)
-            dpg.add_input_int(label="UV Val", width=100, step=0, tag=f"uv_{self.segment_counter}",callback = self.store_segment)
+            dpg.add_input_int(label="Start (s)", width=100, step=0, tag=f"start_{self.segment_counter}")
+            dpg.add_input_int(label="End (s)", width=100, step=0, tag=f"end_{self.segment_counter}")
+            dpg.add_input_int(label="UV Val", width=100, step=0, tag=f"uv_{self.segment_counter}")
         
         
             dpg.add_button(label=" X ", user_data=row_tag, callback=self.delete_segment)
@@ -144,21 +169,49 @@ class GUI:
         elif sender == "VIS LED Gain":
             print(f"VIS LED Gain value: {app_data}")
             # self.daq.send_command(4, app_data)
+    
+    def connect_port(self, sender, app_data, user_data):
+        self.daq.connect(user_data)
+
+    def view_ports(self):
+        dpg.add_text('Connect to COM Port:', parent='com_port_group')
+        dpg.add_separator(parent='com_port_group')
+        availablePortsStrings = self.daq.get_available_ports()
+        if availablePortsStrings:
+            for port in availablePortsStrings:
+                dpg.add_button(
+                    port,
+                    parent='com_port_group',
+                    user_data=port,
+                    callback=self.connect_port,
+                )
+        else:
+            dpg.add_text('No COM Ports detected', parent='com_port_group')
+            #Potentially: refresh button right here
 
     def build_ui(self):
         with dpg.window(tag="main window", width=1000, height=800):
             with dpg.group(horizontal=True):
                 with dpg.child_window(width=350, height=-65):
                     with dpg.tab_bar():
-                        #One tab here for each slider
+                        #One tab here for each slider,this page has sliders and has stuff from before, custom controls are in other tab
                         with dpg.tab(label="Slider Controls"):
+                            dpg.add_separator()
+                            dpg.add_spacer(height=10)
+                            with dpg.group(tag ='com_port_group'):
+                                self.view_ports()
                             dpg.add_spacer(height=10)
                             dpg.add_separator()
                             dpg.add_spacer(height=10)
                             dpg.add_slider_int(label="IR LED Blink", max_value=1000, width=200, callback=self.slider_callback) 
                             dpg.add_slider_int(label="VIS PD Gain", max_value=VIS_PD_MAX, width=200, callback=self.slider_callback) 
                             dpg.add_slider_int(label="IR PD Gain", max_value=IR_PD_MAX, width=200, callback=self.slider_callback) 
-                            dpg.add_slider_int(label="VIS LED Gain", max_value=VIS_LED_MAX, width=200, callback=self.slider_callback) 
+                            dpg.add_slider_int(label="VIS LED Gain", max_value=VIS_LED_MAX, width=200, callback=self.slider_callback)
+                            dpg.add_spacer(height=20)
+                            dpg.add_separator()
+                            dpg.add_text("LIVE")
+                            dpg.add_button(label="OFF", tag = "live_button",callback = self.live_plot_toggle) 
+                            dpg.add_separator()
                         #One tab here which has all these automation controls
                         with dpg.tab(label="Recording Options"):
                             dpg.add_spacer(height=10)
@@ -176,10 +229,11 @@ class GUI:
                             with dpg.group(tag = "Confirm info"):
                                 dpg.add_text("")
                             dpg.add_spacer(height=10)
+
                             dpg.add_input_text(label = "File path",tag = "filepath")
-                            
-                            dpg.add_button(label="START",callback=self.start_recording)
+                            dpg.add_button(label="START",callback=self.start_recording,user_data=False)
                             dpg.add_separator()
+
                             dpg.add_text("TTL Outputs")
                             dpg.add_separator()
 

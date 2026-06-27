@@ -115,3 +115,20 @@ class DAQController:
             self.send_command(0, 0) # turn device off first
             self.serial.close()
             self.is_open = False
+
+    def start_live_chart(self):
+        if not self.is_live and self.is_open:
+            self.running = True
+            # command 0,1 starts the device in firmware
+            self.send_command(0, 1)
+            '''
+            Insert code for chart here
+            '''
+            self.is_live = True
+        elif self.is_open:
+            self.is_live = False
+            self.running = False
+            # command 0,0 stops the device in firmware
+            self.send_command(0, 0)
+        else:
+            self.textBox.setText("Serial Port is not open.")
