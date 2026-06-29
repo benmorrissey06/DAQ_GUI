@@ -2,9 +2,7 @@ import dearpygui.dearpygui as dpg
 import threading
 import time
 from daq import DAQController  
-'''
-currently commenting out all DAQ references so we can test GUI before that is finished.
-'''
+
 VIS_PD_MAX = 255
 IR_PD_MAX = 255
 VIS_LED_MAX = 4095
@@ -77,6 +75,13 @@ class GUI:
             dpg.configure_item("plot_vis", show=False)
 
     def start_recording(self,sender,app_data,user_data):
+        '''
+        When the start button is pressed, this callback function is triggered the recording is initiated.
+        Despite function being named start recording, after pressing Start that button turns into a Stop,
+        which the user can click again to end the recording prematurely
+
+       settings to the recording are retrieved from input fields via dpg.get_value
+        '''
         self.file_path = dpg.get_value("filepath")
         self.is_recording = not getattr(self, 'is_recording', False)
         label = "STOP" if self.is_recording else "START"
@@ -86,8 +91,17 @@ class GUI:
             pass
         if self.is_recording:
             self.prepare_recording()
+            if self.no_overlap:
+                self.upload_schedule_to_daq()
+            else:
+                self.is_recording = False
+                try:
+                    dpg.configure_item('start_button', label='START')
+                except Exception:
+                    pass
         else:
-            pass
+            self.daq.stop_vis_schedule()
+            self.daq.stop_device()
 
     '''
     This function is unnecessary once we have prepare_recording
@@ -117,11 +131,9 @@ class GUI:
         label = "ON" if self.is_live else "OFF"
         dpg.configure_item("live_button", label=label)
         if self.is_live:
-            self.daq.start_live_chart
-            pass
+            self.daq.start_device()
         else:
-            #self.daq.turn_off()
-            pass
+            self.daq.stop_device()
 
     def add_recording_segment(self, app_data, user_data):
         #add a new segment under custom recording controls, where you can set start time, stop time, and the gain during that period
@@ -163,6 +175,35 @@ class GUI:
         else:
             dpg.add_text("Error - overlapping time segments", parent="Confirm info")
 
+    def upload_schedule_to_daq(self):
+        '''
+        Upload the schedule to the daq in a good format for the commands
+        reads all segments from that little table
+        so the schedule can be excecuted in steps via start_vis_schedule
+        '''
+        if not self.no_overlap:
+            return False
+
+        self.daq.clear_vis_schedule()
+        schedule_events = []
+
+        for row_id in self.active_rows:
+            row_num = row_id.split("_")[-1]
+            start_val = dpg.get_value(f"start_{row_num}")
+            end_val = dpg.get_value(f"end_{row_num}")
+            uv_val = dpg.get_value(f"uv_{row_num}")
+            if start_val is None or end_val is None:
+                continue
+            schedule_events.append((float(start_val), int(uv_val)))
+            schedule_events.append((float(end_val), 0))
+
+        schedule_events.sort(key=lambda x: x[0])
+        for time_s, dac_code in schedule_events:
+            self.daq.append_schedule_step(int(time_s), int(dac_code))
+
+        self.daq.start_vis_schedule()
+        self.daq.start_device()
+        return True
 
     def slider_callback(self, sender, app_data,user_data):
         '''
@@ -172,16 +213,16 @@ class GUI:
 
         if sender == "IR LED Blink":
             print(f"IR LED Blink value: {app_data}")
-            # self.daq.send_command(1, app_data) these are wrong for now placeholders, but will match to firmware
+            self.daq.pulse_ir_led(app_data)
         elif sender == "VIS PD Gain":
             print(f"VIS PD Gain value: {app_data}")
-            # self.daq.send_command(2, app_data)
+            self.daq.set_visible_pd_gain(app_data)
         elif sender == "IR PD Gain":
             print(f"IR PD Gain value: {app_data}")
-            # self.daq.send_command(3, app_data)
+            self.daq.set_ir_pd_gain(app_data)
         elif sender == "VIS LED Gain":
             print(f"VIS LED Gain value: {app_data}")
-            # self.daq.send_command(4, app_data)
+            self.daq.set_vis_led_dac(app_data)
     
     def connect_port(self, sender, app_data, user_data):
         self.daq.connect(user_data)
@@ -203,6 +244,10 @@ class GUI:
             #Potentially: refresh button right here
 
     def check_overlaps(self):
+        '''
+        little function just to protect against mistakes by the user
+        if they enter overlapping segments
+        '''
         intervals = []
         for row_id in self.active_rows:
             row_num = row_id.split("_")[-1]
@@ -221,6 +266,10 @@ class GUI:
         return True
     
     def show_TTL_options(self, sender, app_data,user_data):
+        '''
+        makes the checkbox for closed loop TTL settings,
+        work, so the input fields are shown when it's pressed
+        '''
         if not app_data:
             try:
                 dpg.delete_item('ttl_group', children_only=True)
@@ -232,6 +281,9 @@ class GUI:
         dpg.add_input_float(tag='ir_value', parent='ttl_group')
 
     def toggle_above_below(self, sender, app_data, user_data):
+        '''
+        Toggles button between saying Drops Below and Goes Above
+        '''
         self.ttl_drops_below = not getattr(self, 'ttl_drops_below', True)
         label = 'Drops Below' if self.ttl_drops_below else 'Goes Above'
         try:
@@ -242,6 +294,14 @@ class GUI:
     
 
     def build_ui(self):
+        '''
+        The main function where we start dpg,
+        and build the layout so to speak
+
+        Everything here should be readable without comments, and DPG was chosen for this reason
+        to allow easy manipulation of the layout via a CODE interface, 
+        and this easily separates  hardware commands code (in daq.py) from code for the GUI "frontend"or visual elements
+        '''
         with dpg.window(tag="main window", width=1000, height=800):
             with dpg.group(horizontal=True):
                 with dpg.child_window(width=350, height=-65):

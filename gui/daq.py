@@ -7,6 +7,9 @@ class DAQController:
     def __init__(self):
         self.serial = None
         self.is_open = False
+        self.last_response = None
+        self.is_live = False
+        self.running = False
 
         #NOT SURE YET IF WE NEED THESE!
         #self.command_queue = []
@@ -34,13 +37,112 @@ class DAQController:
             print(e)
             return False
 
+    def disconnect(self):
+        if self.serial is not None and self.serial.is_open:
+            self.serial.close()
+        self.serial = None
+        self.is_open = False
+
+    def send_command(self, command, value=None, value2=None, wait_for_response=False):
+        if not self.is_open or self.serial is None:
+            raise RuntimeError("Serial port is not open")
+
+        if value is None:
+            cmd = f"{command},0\n"
+        elif value2 is None:
+            cmd = f"{command},{value}\n"
+        else:
+            cmd = f"{command},{value},{value2}\n"
+
+        try:
+            self.serial.reset_input_buffer()
+            self.serial.reset_output_buffer()
+            self.serial.write(cmd.encode("utf-8"))
+            self.serial.flush()
+        except Exception as e:
+            raise RuntimeError(f"DAQ write error: {e}")
+
+        if wait_for_response:
+            return self.read_response()
+        return None
+
+    def read_response(self, timeout=1.0):
+        if not self.is_open or self.serial is None:
+            return None
+        deadline = time.time() + timeout
+        line = b""
+        while time.time() < deadline:
+            if self.serial.in_waiting > 0:
+                line = self.serial.readline()
+                break
+            time.sleep(0.01)
+        try:
+            text = line.decode("utf-8", errors="ignore").strip()
+        except Exception:
+            text = ""
+        self.last_response = text
+        return text
+
     def turn_off(self):
         if self.is_open:
             self.send_command(0, 0) # turn device off first
-            self.serial.close()
-            self.is_open = False
+            self.disconnect()
+
+    def start_device(self):
+        self.send_command(0, 1)
+
+    def stop_device(self):
+        self.send_command(0, 0)
+
+    def set_visible_pd_gain(self, value):
+        self.send_command(1, value)
+
+    def set_ir_pd_gain(self, value):
+        self.send_command(2, value)
+
+    def set_vis_led_dac(self, value):
+        self.send_command(3, value)
+
+    def pulse_ir_led(self, duration_us):
+        self.send_command(4, duration_us)
+
+    def request_status(self):
+        self.send_command(7, 0)
+        return self.read_response()
+
+    def read_single_adc(self):
+        self.send_command(8, 0)
+        return self.read_response()
+
+    def set_adc_streaming(self, enabled):
+        self.send_command(9, 1 if enabled else 0)
+
+    def set_adc_stream_decimation(self, value):
+        self.send_command(10, value)
+
+    def set_sample_rate(self, rate_hz):
+        self.send_command(11, rate_hz)
+
+    def clear_vis_schedule(self):
+        self.send_command(12, 0)
+
+    def append_schedule_step(self, time_s, dac_code):
+        self.send_command(13, time_s, dac_code)
+
+    def start_vis_schedule(self):
+        self.send_command(14, 0)
+
+    def stop_vis_schedule(self):
+        self.send_command(15, 0)
+
+
+
+
 
     def start_live_chart(self):
+        '''
+        This needs serious work
+        '''
         if not self.is_live and self.is_open:
             self.running = True
             # command 0,1 starts the device in firmware
@@ -55,4 +157,4 @@ class DAQController:
             # command 0,0 stops the device in firmware
             self.send_command(0, 0)
         else:
-            self.textBox.setText("Serial Port is not open.")
+            print("Serial Port is not open.")
