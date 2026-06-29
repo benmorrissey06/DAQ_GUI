@@ -64,7 +64,7 @@ class GUI:
         '''
         with dpg.window(tag="main window", width=1000, height=800):
             with dpg.group(horizontal=True):
-                with dpg.child_window(width=350, height=-65):
+                with dpg.child_window(width=390, height=-65):
                     with dpg.tab_bar():
                         #One tab here for each slider,this page has sliders and has stuff from before, custom controls are in other tab
                         with dpg.tab(label="Slider Controls"):
@@ -97,21 +97,25 @@ class GUI:
                             # The group will then appear here
                             with dpg.group(tag="protocol_group"):
                                 dpg.add_text("")
+                            dpg.add_separator()
+                            dpg.add_text("TTL Outputs")
+                            dpg.add_checkbox(label = "Enable Closed Loop TTL",default_value = False, callback = self.show_TTL_options)
+                            with dpg.group(tag = 'ttl_group',horizontal = True):
+                                pass
+                            dpg.add_separator()
+                            dpg.add_text("Triggers")
+                            with dpg.group(tag='triggers', horizontal=True):
+                                dpg.add_checkbox(label="Send Output Trigger", default_value=False, tag="send_output_trigger", callback=self.set_trigger_option)
+                                dpg.add_checkbox(label="Wait for Input Trigger", default_value=False, tag="wait_for_input_trigger", callback=self.set_trigger_option)
+                            dpg.add_separator()
                             dpg.add_button(label = "Save Recording Settings",callback=self.prepare_recording)
                             with dpg.group(tag = "Confirm info"):
                                 dpg.add_text("")
                             dpg.add_spacer(height=10)
-
                             dpg.add_input_text(label = "File path",tag = "filepath")
+                            dpg.add_separator()
                             dpg.add_button(label="START", tag="start_button", callback=self.start_recording)
-                            dpg.add_separator()
-
-                            dpg.add_text("TTL Outputs")
-                            dpg.add_separator()
-                            dpg.add_checkbox(label = "Enable Closed Loop TTL",default_value = False, callback = self.show_TTL_options)
-                            with dpg.group(tag = 'ttl_group',horizontal = True):
-                                pass
-
+                           
                             
 
                 with dpg.child_window(width=-1, height=-65):
@@ -119,13 +123,13 @@ class GUI:
                         dpg.add_checkbox(label="IR Light", default_value=True, callback=self.toggle_plots, tag="cb_ir")
                         dpg.add_checkbox(label="VIS Light", default_value=True, callback=self.toggle_plots, tag="cb_vis")
                     
-                    with dpg.plot(label="IR Sensor Data", height=350, width=-1, tag="plot_ir"):
+                    with dpg.plot(label="IR Sensor Data", height=300, width=-1, tag="plot_ir"):
                         dpg.add_plot_legend()
                         dpg.add_plot_axis(dpg.mvXAxis, label="time (s)")
                         with dpg.plot_axis(dpg.mvYAxis, label="Sensor Value"):
                             dpg.add_line_series(self.x_data, self.y_data, label="IR Data")
 
-                    with dpg.plot(label="VIS Sensor Data", height=350, width=-1, tag="plot_vis"):
+                    with dpg.plot(label="VIS Sensor Data", height=300, width=-1, tag="plot_vis"):
                         dpg.add_plot_legend()
                         dpg.add_plot_axis(dpg.mvXAxis, label="time (s)")
                         with dpg.plot_axis(dpg.mvYAxis, label="sensor Value"):
@@ -350,9 +354,15 @@ class GUI:
             except Exception:
                 pass
             return
-        dpg.add_text("If IR Light", parent='ttl_group')
-        dpg.add_button(label='Drops Below', tag='ttl_direction_button', callback=self.toggle_ttl_direction, parent='ttl_group')
-        dpg.add_input_float(tag='ir_value', parent='ttl_group')
+        with dpg.group(parent='ttl_group'):
+            with dpg.group(horizontal=True):
+                dpg.add_text("If IR Light")
+                dpg.add_button(label='Drops Below', tag='ttl_direction_button', callback=self.toggle_ttl_direction)
+                dpg.add_input_float(label='Threshold', tag='ir_value')
+            with dpg.group(horizontal=True):
+                dpg.add_text("Then Pulse:")
+                dpg.add_input_float(label='Freq (Hz)', tag='ttl_freq')
+                dpg.add_input_float(label='Width (ms)', tag='ttl_width')
 
     def toggle_ttl_direction(self, sender, app_data, user_data):
         '''
@@ -365,6 +375,12 @@ class GUI:
         except Exception:
             pass
         self.ttl_condition = 'below' if self.ttl_drops_below else 'above'
+
+    def set_trigger_option(self, sender, app_data, user_data):
+        if sender == 'send_output_trigger':
+            self.send_output = app_data
+        elif sender == 'wait_for_input_trigger':
+            self.wait_for_input = app_data
  
     # general
 
@@ -386,6 +402,11 @@ if __name__ == "__main__":
     '''
     TO DO Here another time!!! 
     Decimation from Kam's Github
+    control sampling freq
     Learn more about input output triggers and how to best integrate
     confirm that my setup with the closed loop TTL idea is correct.
+
+    The way Kam had done the segments may have been better - consider switching:
+    Stream decimation — the firmware sends every Nth sample's DATA line; default 10. Lower = more data; higher = less serial traffic.
+    Sample rate — set in the Streaming section (10–250 Hz, default 100 Hz). The firmware gates samples with micros() so serial parsing still runs between samples.
     '''
