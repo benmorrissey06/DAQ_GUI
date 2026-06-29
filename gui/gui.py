@@ -25,6 +25,8 @@ class GUI:
         self.time_stamps = []
         self.recording_duration = 0.0
         self.active_rows = []
+        self.is_recording = False
+        self.ttl_drops_below = True
 
 
         '''
@@ -75,9 +77,18 @@ class GUI:
             dpg.configure_item("plot_vis", show=False)
 
     def start_recording(self,sender,app_data,user_data):
-        self.file_path=dpg.get_value("filepath") #Save filepath, maybe have file expolorer open instead?
-        pass
-        #self.daq.begin_recording()
+        self.file_path = dpg.get_value("filepath")
+        self.is_recording = not getattr(self, 'is_recording', False)
+        label = "STOP" if self.is_recording else "START"
+        try:
+            dpg.configure_item('start_button', label=label)
+        except Exception:
+            pass
+        if self.is_recording:
+            self.prepare_recording()
+        else:
+            pass
+
     '''
     This function is unnecessary once we have prepare_recording
     def store_segment(self,sender,app_data,user_data):
@@ -131,6 +142,8 @@ class GUI:
         dpg.delete_item("Confirm info", children_only=True)
         self.time_stamps.clear()
         self.light_values.clear()
+
+        self.check_overlaps()
 
         for row_id in self.active_rows:
             row_num = row_id.split("_")[-1]
@@ -189,6 +202,45 @@ class GUI:
             dpg.add_text('No COM Ports detected', parent='com_port_group')
             #Potentially: refresh button right here
 
+    def check_overlaps(self):
+        intervals = []
+        for row_id in self.active_rows:
+            row_num = row_id.split("_")[-1]
+            start_val = dpg.get_value(f"start_{row_num}")
+            end_val = dpg.get_value(f"end_{row_num}")
+            if start_val is None or end_val is None:
+                self.no_overlap = False
+                return False
+            intervals.append((min(start_val, end_val), max(start_val, end_val)))
+        intervals.sort(key=lambda x: x[0])
+        for i in range(1, len(intervals)):
+            if intervals[i][0] < intervals[i-1][1]:
+                self.no_overlap = False
+                return False
+        self.no_overlap = True
+        return True
+    
+    def show_TTL_options(self, sender, app_data,user_data):
+        if not app_data:
+            try:
+                dpg.delete_item('ttl_group', children_only=True)
+            except Exception:
+                pass
+            return
+        dpg.add_text("If IR Light", parent='ttl_group')
+        dpg.add_button(label='Drops Below', tag='ttl_direction_button', callback=self.toggle_above_below, parent='ttl_group')
+        dpg.add_input_float(tag='ir_value', parent='ttl_group')
+
+    def toggle_above_below(self, sender, app_data, user_data):
+        self.ttl_drops_below = not getattr(self, 'ttl_drops_below', True)
+        label = 'Drops Below' if self.ttl_drops_below else 'Goes Above'
+        try:
+            dpg.configure_item('ttl_direction_button', label=label)
+        except Exception:
+            pass
+        self.ttl_condition = 'below' if self.ttl_drops_below else 'above'
+    
+
     def build_ui(self):
         with dpg.window(tag="main window", width=1000, height=800):
             with dpg.group(horizontal=True):
@@ -231,11 +283,16 @@ class GUI:
                             dpg.add_spacer(height=10)
 
                             dpg.add_input_text(label = "File path",tag = "filepath")
-                            dpg.add_button(label="START",callback=self.start_recording,user_data=False)
+                            dpg.add_button(label="START", tag="start_button", callback=self.start_recording)
                             dpg.add_separator()
 
                             dpg.add_text("TTL Outputs")
                             dpg.add_separator()
+                            dpg.add_checkbox(label = "Enable Closed Loop TTL",default_value = False, callback = self.show_TTL_options)
+                            with dpg.group(tag = 'ttl_group',horizontal = True):
+                                pass
+
+                            
 
                 with dpg.child_window(width=-1, height=-65):
                     with dpg.group(horizontal=True):
@@ -267,3 +324,11 @@ class GUI:
 if __name__ == "__main__":
     app = GUI()
     app.run()
+
+
+    '''
+    TO DO Here another time!!! 
+    Decimation from Kam's Github
+    Learn more about input output triggers and how to best integrate
+    confirm that my setup with the closed loop TTL idea is correct.
+    '''
