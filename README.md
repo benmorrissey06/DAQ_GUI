@@ -12,7 +12,6 @@ Mac / Linux:
 python3 -m venv my_venv
 ```
 
-
 ## Activate virtual environment
 
 Windows (PowerShell):
@@ -24,7 +23,6 @@ Mac / Linux:
 ```bash
 source my_venv/bin/activate
 ```
-
 
 ## Upgrade pip
 
@@ -38,38 +36,62 @@ Mac / Linux:
 python3 -m pip install --upgrade pip
 ```
 
-
 ## Install dependencies
 
 ```bash
 pip install -r requirements.txt
 ```
 
-
 ## Run the GUI
 
 Windows:
 ```bash
-python gui.py
+python gui/main.py
 ```
 
 Mac / Linux:
 ```bash
-python3 gui.py
+python3 gui/main.py
 ```
+
+## Usage Instructions
+
+Click the button for desired COM Port
+
+Turn on LIVE to begin streaming and start device
+
+Apply desired settings in General Controls, or set up a timed recording with a variety of options in Recording Controls
+
+Select which plots you would like to view from the checkboxes on the right window of the screen
 
 ## Key Features
 
-```bash
-Convenient integration of input & output triggers when recording from the gui
-
+```text
 Ability to define file name, path, and recording duration from the gui
 
-Ability to set timed UV light controls (e.g. 0-20s no UV light, 20-40s UV set to 250, 40+s UV set to 230) during a recording from the gui
+Automatic file naming based on current time and entered data
 
-Better visualization of the ambient light sensor could be nice, e.g. simultaneous plotting of ambient light and IR light
+Ability to set timed UV light controls (e.g. 0-20s no UV light, 20-40s UV set to 250, 40+s UV set to 230) during a recording from the gui (CURRENTLY ONLY FRONTEND)
 
-Integration of closed loop TTL outputs when IR light drops below or goes above a set threshold, with customizable stimulation parameters (pulse freq, width, etc.)
+Better visualization of the ambient light sensor could be nice - checkbox to see whatever graph you like
+```
 
-Package gui in an executable program
+```text
+TO DO:
+
+Allow checkbox options to view voltage and current supplies to LED (making it 4 total graphs)
+
+Make the light value entered in a time segment functional, currently that is only frontend
+
+Save settings as a json alongside csv of main data
+
+Allow multiple tabs if we need to control multiple devices at once
+
+Minor: Refresh COM Ports
+
+Adapt to any new firmware changes
+
+Quality of life and safety features
+
+Package in Executable program
 ```

@@ -6,6 +6,10 @@ from tkinter import Tk, filedialog
 from daq import DAQController  
 from datetime import datetime
 
+'''
+The visual GUI and file saving is handled in this file
+'''
+
 VIS_PD_MAX = 255
 IR_PD_MAX = 255
 VIS_LED_MAX = 4095
@@ -537,14 +541,3 @@ class GUI:
 if __name__ == "__main__":
     app = GUI()
     app.run()
-
-    '''
-    TO DO Here another time!!! 
-   
-    Learn more about input output triggers and how to best integrate
-    confirm that my setup with the closed loop TTL idea is correct.
-    The way Kam had done the segments may have been better - consider switching:
-    
-    Make TTL and triggers work by locating those pins and possibly updating firmware
-
-    '''
