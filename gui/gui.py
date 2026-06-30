@@ -1,23 +1,33 @@
 import dearpygui.dearpygui as dpg
 import threading
 import time
+import os
+from tkinter import Tk, filedialog
 from daq import DAQController  
+from datetime import datetime
 
 VIS_PD_MAX = 255
 IR_PD_MAX = 255
 VIS_LED_MAX = 4095
 
-
 class GUI:
     def __init__(self):
+        #basic info
+        self.animal_id=None
+        self.test_label=None
+        self.cohort = None
+
+
         self.daq = DAQController()
         self.is_live = False
         self.running = True
-
-        self.file_path = ""
+        self.file_name = ""
+        self.bin_file = None
+        self.save_directory = ""
         
         self.x_data = []
         self.y_data = []
+        self.date = datetime.now().strftime("%m%d%Y_%H%M")
         self.max_points = 5000 
         self.times = []
         self.ir_data = []
@@ -31,6 +41,7 @@ class GUI:
         self.active_rows = []
         self.is_recording = False
         self.ttl_drops_below = True
+
         '''
         Variables for trigger integration and TTL 
         '''
@@ -63,7 +74,7 @@ class GUI:
         and build the layout so to speak
 
         Everything here should be readable without comments, and DPG was chosen for this reason
-        to allow easy manipulation of the layout via a CODE interface, 
+        to allow easy manipulation of the layout via a code interface, 
         and this easily separates  hardware commands code (in daq.py) from code for the GUI "frontend"or visual elements
         '''
         with dpg.window(tag="main window", width=1000, height=800):
@@ -72,6 +83,9 @@ class GUI:
                     with dpg.tab_bar():
                         #One tab here for each slider,this page has sliders and has stuff from before, custom controls are in other tab
                         with dpg.tab(label="General Controls"):
+                            dpg.add_input_text(label ="Cohort",callback = self.collect_info)
+                            dpg.add_input_text(label ="Animal ID",callback = self.collect_info)
+                            dpg.add_input_text(label ="Test Label",callback = self.collect_info)
                             dpg.add_separator()
                             dpg.add_spacer(height=10)
                             with dpg.group(tag ='com_port_group'):
@@ -95,7 +109,7 @@ class GUI:
                             dpg.add_spacer(height=10)
                           
                         #One tab here which has all these automation controls
-                        with dpg.tab(label="Recording Options"):
+                        with dpg.tab(label="Recording Options", tag = 'recording_options'):
                             dpg.add_spacer(height=10)
                             dpg.add_text("Start Recording: ")
                             dpg.add_separator()
@@ -122,7 +136,9 @@ class GUI:
                             with dpg.group(tag = "Confirm info"):
                                 dpg.add_text("")
                             dpg.add_spacer(height=10)
-                            dpg.add_input_text(label = "File path",tag = "filepath")
+                            dpg.add_button(label="Browse Save Location", callback=self.browse_save_directory)
+                            dpg.add_text("No folder selected", tag="save_dir_display")
+                            dpg.add_input_text(label = "File name",tag = "filename")
                             dpg.add_separator()
                             dpg.add_button(label="START", tag="start_button", callback=self.start_recording)
                            
@@ -144,7 +160,37 @@ class GUI:
                         dpg.add_plot_axis(dpg.mvXAxis, label="time (s)", tag="vis_x_axis")
                         with dpg.plot_axis(dpg.mvYAxis, label="sensor Value", tag="vis_y_axis"):
                             dpg.add_line_series(self.x_data, self.y_data, label="VIS data", tag="vis_series")
+    #Basic info``
+    def collect_info(self, sender, app_data, user_data):
+        label = dpg.get_item_label(sender)
+        if label == "Cohort":
+            self.cohort = app_data
+        elif label == "Animal ID":
+            self.animal_id = app_data
+        elif label == "Test Label":
+            self.test_label = app_data
 
+    def browse_save_directory(self, sender=None, app_data=None, user_data=None):
+        root = Tk()
+        root.withdraw()
+        root.attributes('-topmost', True)
+        folder = filedialog.askdirectory(title="Select Save Location")
+        root.destroy()
+        if folder:
+            self.save_directory = folder
+            dpg.set_value("save_dir_display", f"Saving to: {folder}")
+
+    def refresh_path(self):
+        self.date = datetime.now().strftime("%m%d%Y_%H%M")
+        
+        c = self.cohort if self.cohort else ""
+        a = self.animal_id if self.animal_id else ""
+        t = self.test_label if self.test_label else ""
+        
+        base_dir = self.save_directory if self.save_directory else "C:/"
+        new_path = os.path.join(base_dir, f"{c}_{a}_{t}_{self.date}_Pupil")
+        dpg.set_value("filename", new_path)
+        
     # Connection /Hardware Control Buttons
 
     def view_ports(self):
@@ -221,6 +267,13 @@ class GUI:
 
         raw_ir, raw_vis = parsed
         self.update_plots(raw_ir, raw_vis, time.time())
+        
+        if self.is_recording and self.bin_file:
+            try:
+                self.bin_file.write(int(raw_ir).to_bytes(2, byteorder='big', signed=True))
+                self.bin_file.write(int(raw_vis).to_bytes(2, byteorder='big', signed=True))
+            except OverflowError:
+                pass
 
     def toggle_plots(self, sender, app_data, user_data):
         '''
@@ -266,16 +319,36 @@ class GUI:
 
        settings to the recording are retrieved from input fields via dpg.get_value
         '''
-        self.file_path = dpg.get_value("filepath")
+        self.file_name = dpg.get_value("filename")
+        
+        if not self.file_name:
+            return
+
+        if not self.save_directory or not os.path.isdir(self.save_directory):
+            dpg.delete_item("Confirm info", children_only=True)
+            dpg.add_text("Error: Please select a save location first!", parent="Confirm info")
+            return
+
         self.is_recording = not getattr(self, 'is_recording', False)
+        if self.is_recording:
+            self.start_time = time.time()
         label = "STOP" if self.is_recording else "START"
         try:
             dpg.configure_item('start_button', label=label)
         except Exception:
             pass
+
         if self.is_recording:
             self.prepare_recording()
             if self.no_overlap:
+                try:
+                    self.bin_file = open(f"{self.file_name}.bin", 'wb')
+                except OSError as e:
+                    dpg.delete_item("Confirm info", children_only=True)
+                    dpg.add_text(f"Error: Cannot create file - {e}", parent="Confirm info")
+                    self.is_recording = False
+                    dpg.configure_item('start_button', label='START')
+                    return
                 self.upload_schedule_to_daq()
             else:
                 self.is_recording = False
@@ -285,7 +358,11 @@ class GUI:
                     pass
         else:
             self.daq.stop_vis_schedule()
-            self.daq.stop_device()
+            if self.bin_file:
+                self.bin_file.flush()
+                os.fsync(self.bin_file.fileno())
+                self.bin_file.close()
+                self.bin_file = None
 
     def update_recording_duration(self, sender, app_data, user_data):
         self.recording_duration = app_data
@@ -312,6 +389,10 @@ class GUI:
         dpg.delete_item(user_data)
 
     def prepare_recording(self):
+        '''
+        When the user is ready to Start a recording, they can press save beforehand to check for overlaps
+        and confirm their info, as it will be printed out for them with this.
+        '''
         dpg.delete_item("Confirm info", children_only=True)
         self.time_stamps.clear()
         self.light_values.clear()
@@ -411,6 +492,12 @@ class GUI:
 
     def hardware_thread(self):
         while self.running:
+            self.refresh_path()
+            
+            if self.is_recording and self.recording_duration > 0:
+                if (time.time() - self.start_time) >= self.recording_duration:
+                    self.stop_recording_automatically()
+            
             if self.is_live and self.daq.is_open and self.daq.serial is not None:
                 try:
                     while self.daq.serial.in_waiting > 0:
@@ -419,6 +506,18 @@ class GUI:
                 except Exception:
                     pass
             time.sleep(0.01)
+
+    def stop_recording_automatically(self):
+        self.is_recording = False
+        self.daq.stop_vis_schedule()
+        
+        if self.bin_file:
+            self.bin_file.flush()
+            os.fsync(self.bin_file.fileno())
+            self.bin_file.close()
+            self.bin_file = None
+            
+        dpg.configure_item('start_button', label='START')
 
     def run(self):
         dpg.set_primary_window("main window", True)
@@ -436,8 +535,6 @@ if __name__ == "__main__":
     Learn more about input output triggers and how to best integrate
     confirm that my setup with the closed loop TTL idea is correct.
     The way Kam had done the segments may have been better - consider switching:
-
-    Make the file path and recording aspects actually work!
     Make TTL and triggers work by locating those pins and possibly updating firmware
 
     '''

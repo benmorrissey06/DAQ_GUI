@@ -13,12 +13,6 @@ iso8601==1.1.0
 numpy==1.24.2
 packaging==23.0
 pycharts==0.1.5
-PyQt6==6.4.2
-PyQt6-Charts==6.4.0
-PyQt6-Charts-Qt6==6.4.2
-PyQt6-Qt6==6.4.2
-PyQt6-sip==13.4.1
-pyqtgraph==0.13.1
 pyserial==3.5
 pytz==2022.7.1
 PyYAML==6.0

@@ -2,7 +2,10 @@ import serial
 from serial.tools import list_ports
 import time
 from datetime import datetime
-
+'''
+All serial communication code should be handled in this file
+so, if there are any changes to the firmware, this file should be modified
+'''
 
 class DAQController:
     def __init__(self):
@@ -11,11 +14,6 @@ class DAQController:
         self.last_response = None
         self.is_live = False
         self.running = False
-
-        #NOT SURE YET IF WE NEED THESE!
-        #self.command_queue = []
-        #self.buff = None
-        #self.is_writing = False
 
     def get_available_ports(self):
         availablePorts = serial.tools.list_ports.comports()
@@ -158,27 +156,3 @@ class DAQController:
 
     def stop_vis_schedule(self):
         self.send_command(15, 0)
-
-
-
-
-
-    def start_live_chart(self):
-        '''
-        This needs serious work
-        '''
-        if not self.is_live and self.is_open:
-            self.running = True
-            # command 0,1 starts the device in firmware
-            self.send_command(0, 1)
-            '''
-            Insert code for chart here
-            '''
-            self.is_live = True
-        elif self.is_open:
-            self.is_live = False
-            self.running = False
-            # command 0,0 stops the device in firmware
-            self.send_command(0, 0)
-        else:
-            print("Serial Port is not open.")
