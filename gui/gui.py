@@ -187,9 +187,7 @@ class GUI:
         a = self.animal_id if self.animal_id else ""
         t = self.test_label if self.test_label else ""
         
-        base_dir = self.save_directory if self.save_directory else "C:/"
-        new_path = os.path.join(base_dir, f"{c}_{a}_{t}_{self.date}_Pupil")
-        dpg.set_value("filename", new_path)
+        dpg.set_value("filename", f"{c}_{a}_{t}_{self.date}_Pupil")
         
     # Connection /Hardware Control Buttons
 
@@ -319,15 +317,17 @@ class GUI:
 
        settings to the recording are retrieved from input fields via dpg.get_value
         '''
-        self.file_name = dpg.get_value("filename")
+        name = dpg.get_value("filename")
         
-        if not self.file_name:
+        if not name:
             return
 
         if not self.save_directory or not os.path.isdir(self.save_directory):
             dpg.delete_item("Confirm info", children_only=True)
             dpg.add_text("Error: Please select a save location first!", parent="Confirm info")
             return
+
+        self.file_name = os.path.join(self.save_directory, name)
 
         self.is_recording = not getattr(self, 'is_recording', False)
         if self.is_recording:
@@ -439,6 +439,15 @@ class GUI:
         self.no_overlap = True
         return True
 
+    def upload_schedule_to_daq(self):
+        if not self.daq.is_open:
+            return
+        self.daq.clear_vis_schedule()
+        for i in range(len(self.time_stamps)):
+            self.daq.append_schedule_step(self.time_stamps[i][0], self.light_values[i])
+            self.daq.append_schedule_step(self.time_stamps[i][1], 0)
+        self.daq.start_vis_schedule()
+
     # TTL Options
 
     def show_TTL_options(self, sender, app_data, user_data):
@@ -535,6 +544,7 @@ if __name__ == "__main__":
     Learn more about input output triggers and how to best integrate
     confirm that my setup with the closed loop TTL idea is correct.
     The way Kam had done the segments may have been better - consider switching:
+    
     Make TTL and triggers work by locating those pins and possibly updating firmware
 
     '''
