@@ -7,6 +7,7 @@ VIS_PD_MAX = 255
 IR_PD_MAX = 255
 VIS_LED_MAX = 4095
 
+
 class GUI:
     def __init__(self):
         self.daq = DAQController()
@@ -18,6 +19,11 @@ class GUI:
         self.x_data = []
         self.y_data = []
         self.max_points = 5000 
+        self.times = []
+        self.ir_data = []
+        self.vis_data = []
+        self.t0 = None
+        self.plot_window_s = 10.0
 
         self.light_values = []
         self.time_stamps = []
@@ -25,8 +31,6 @@ class GUI:
         self.active_rows = []
         self.is_recording = False
         self.ttl_drops_below = True
-
-
         '''
         Variables for trigger integration and TTL 
         '''
@@ -67,7 +71,7 @@ class GUI:
                 with dpg.child_window(width=390, height=-65):
                     with dpg.tab_bar():
                         #One tab here for each slider,this page has sliders and has stuff from before, custom controls are in other tab
-                        with dpg.tab(label="Slider Controls"):
+                        with dpg.tab(label="General Controls"):
                             dpg.add_separator()
                             dpg.add_spacer(height=10)
                             with dpg.group(tag ='com_port_group'):
@@ -81,9 +85,15 @@ class GUI:
                             dpg.add_slider_int(label="VIS LED Gain", max_value=VIS_LED_MAX, width=200, callback=self.on_slider_changed)
                             dpg.add_spacer(height=20)
                             dpg.add_separator()
+                            dpg.add_text("Streaming")
+                            dpg.add_input_int(label="Stream decimation", width=200, default_value=10, min_value=1, max_value=65535, tag="stream_decimation_input", callback=self.set_stream_decimation)
+                            dpg.add_input_int(label="Sample rate (Hz)", width=200, default_value=100, min_value=10, max_value=250, tag="sample_rate_input", callback=self.set_sample_rate)
+                            dpg.add_spacer(height=10)
+                            dpg.add_separator()
                             dpg.add_text("LIVE")
                             dpg.add_button(label="OFF", tag = "live_button",callback = self.live_plot_toggle) 
-                            dpg.add_separator()
+                            dpg.add_spacer(height=10)
+                          
                         #One tab here which has all these automation controls
                         with dpg.tab(label="Recording Options"):
                             dpg.add_spacer(height=10)
@@ -125,17 +135,17 @@ class GUI:
                     
                     with dpg.plot(label="IR Sensor Data", height=300, width=-1, tag="plot_ir"):
                         dpg.add_plot_legend()
-                        dpg.add_plot_axis(dpg.mvXAxis, label="time (s)")
-                        with dpg.plot_axis(dpg.mvYAxis, label="Sensor Value"):
-                            dpg.add_line_series(self.x_data, self.y_data, label="IR Data")
+                        dpg.add_plot_axis(dpg.mvXAxis, label="time (s)", tag="ir_x_axis")
+                        with dpg.plot_axis(dpg.mvYAxis, label="Sensor Value", tag="ir_y_axis"):
+                            dpg.add_line_series(self.x_data, self.y_data, label="IR Data", tag="ir_series")
 
                     with dpg.plot(label="VIS Sensor Data", height=300, width=-1, tag="plot_vis"):
                         dpg.add_plot_legend()
-                        dpg.add_plot_axis(dpg.mvXAxis, label="time (s)")
-                        with dpg.plot_axis(dpg.mvYAxis, label="sensor Value"):
-                            dpg.add_line_series(self.x_data, self.y_data, label="VIS data")
+                        dpg.add_plot_axis(dpg.mvXAxis, label="time (s)", tag="vis_x_axis")
+                        with dpg.plot_axis(dpg.mvYAxis, label="sensor Value", tag="vis_y_axis"):
+                            dpg.add_line_series(self.x_data, self.y_data, label="VIS data", tag="vis_series")
 
-    # Connection / Hardware Control Buttons
+    # Connection /Hardware Control Buttons
 
     def view_ports(self):
         dpg.add_text('Connect to COM Port:', parent='com_port_group')
@@ -143,18 +153,14 @@ class GUI:
         availablePortsStrings = self.daq.get_available_ports()
         if availablePortsStrings:
             for port in availablePortsStrings:
-                dpg.add_button(
-                    port,
-                    parent='com_port_group',
-                    user_data=port,
-                    callback=self.connect_port,
-                )
+                dpg.add_button(label=port,parent='com_port_group',user_data=port, callback=self.connect_port,)
         else:
             dpg.add_text('No COM Ports detected', parent='com_port_group')
             #Potentially: refresh button right here
 
     def connect_port(self, sender, app_data, user_data):
         self.daq.connect(user_data)
+        dpg.add_text("Connected!",parent = 'com_port_group')
 
     # Slider Control
    
@@ -179,6 +185,43 @@ class GUI:
 
     # Plotting
 
+    def update_plots(self, raw_ir, raw_vis, host_time):
+        if self.t0 is None:
+            self.t0 = host_time
+
+        t = host_time - self.t0
+        self.times.append(t)
+        self.ir_data.append(raw_ir)
+        self.vis_data.append(raw_vis)
+
+        cutoff = t - self.plot_window_s
+        while self.times and self.times[0] < cutoff:
+            self.times.pop(0)
+            self.ir_data.pop(0)
+            self.vis_data.pop(0)
+
+        dpg.set_value("ir_series", [self.times, self.ir_data])
+        dpg.set_value("vis_series", [self.times, self.vis_data])
+
+        # This chunk lets it expand until reaches a 10 s window, and then holds that window still
+        if t > self.plot_window_s:
+            dpg.set_axis_limits("ir_x_axis", cutoff, t)
+            dpg.set_axis_limits("vis_x_axis", cutoff, t)
+        else:
+            dpg.set_axis_limits("ir_x_axis", 0, self.plot_window_s)
+            dpg.set_axis_limits("vis_x_axis", 0, self.plot_window_s)
+
+        dpg.fit_axis_data("ir_y_axis")
+        dpg.fit_axis_data("vis_y_axis")
+
+    def process_serial_line(self, line):
+        parsed = self.daq.handle_stream_line(line)
+        if parsed is None:
+            return
+
+        raw_ir, raw_vis = parsed
+        self.update_plots(raw_ir, raw_vis, time.time())
+
     def toggle_plots(self, sender, app_data, user_data):
         '''
         this function allows us to view either IR or VIS, or both simultaneously
@@ -188,8 +231,8 @@ class GUI:
         vis_checked = dpg.get_value("cb_vis")
         
         if ir_checked and vis_checked:
-            dpg.configure_item("plot_ir", show=True, height=350)
-            dpg.configure_item("plot_vis", show=True, height=350)
+            dpg.configure_item("plot_ir", show=True, height=300)
+            dpg.configure_item("plot_vis", show=True, height=300)
         elif ir_checked:
             dpg.configure_item("plot_ir", show=True, height=-1)
             dpg.configure_item("plot_vis", show=False)
@@ -205,8 +248,12 @@ class GUI:
         label = "ON" if self.is_live else "OFF"
         dpg.configure_item("live_button", label=label)
         if self.is_live:
+            self.daq.set_adc_streaming(True)
+            self.daq.set_adc_stream_decimation(int(dpg.get_value("stream_decimation_input")))
+            self.daq.set_sample_rate(int(dpg.get_value("sample_rate_input")))
             self.daq.start_device()
         else:
+            self.daq.set_adc_streaming(False)
             self.daq.stop_device()
 
     # Recording Control
@@ -289,36 +336,6 @@ class GUI:
         else:
             dpg.add_text("Error - overlapping time segments", parent="Confirm info")
 
-    def upload_schedule_to_daq(self):
-        '''
-        Upload the schedule to the daq in a good format for the commands
-        reads all segments from that little table
-        so the schedule can be excecuted in steps via start_vis_schedule
-        '''
-        if not self.no_overlap:
-            return False
-
-        self.daq.clear_vis_schedule()
-        schedule_events = []
-
-        for row_id in self.active_rows:
-            row_num = row_id.split("_")[-1]
-            start_val = dpg.get_value(f"start_{row_num}")
-            end_val = dpg.get_value(f"end_{row_num}")
-            uv_val = dpg.get_value(f"uv_{row_num}")
-            if start_val is None or end_val is None:
-                continue
-            schedule_events.append((float(start_val), int(uv_val)))
-            schedule_events.append((float(end_val), 0))
-
-        schedule_events.sort(key=lambda x: x[0])
-        for time_s, dac_code in schedule_events:
-            self.daq.append_schedule_step(int(time_s), int(dac_code))
-
-        self.daq.start_vis_schedule()
-        self.daq.start_device()
-        return True
-
     def check_overlaps(self):
         '''
         little function just to protect against mistakes by the user
@@ -381,12 +398,27 @@ class GUI:
             self.send_output = app_data
         elif sender == 'wait_for_input_trigger':
             self.wait_for_input = app_data
+
+    def set_stream_decimation(self, sender, app_data, user_data):
+        value = max(1, int(app_data))
+        self.daq.set_adc_stream_decimation(value)
+
+    def set_sample_rate(self, sender, app_data, user_data):
+        value = max(10, min(250, int(app_data)))
+        self.daq.set_sample_rate(value)
  
     # general
 
     def hardware_thread(self):
         while self.running:
-            time.sleep(0.1)
+            if self.is_live and self.daq.is_open and self.daq.serial is not None:
+                try:
+                    while self.daq.serial.in_waiting > 0:
+                        line = self.daq.serial.readline()
+                        self.process_serial_line(line)
+                except Exception:
+                    pass
+            time.sleep(0.01)
 
     def run(self):
         dpg.set_primary_window("main window", True)
@@ -398,15 +430,14 @@ if __name__ == "__main__":
     app = GUI()
     app.run()
 
-
     '''
     TO DO Here another time!!! 
-    Decimation from Kam's Github
-    control sampling freq
+   
     Learn more about input output triggers and how to best integrate
     confirm that my setup with the closed loop TTL idea is correct.
-
     The way Kam had done the segments may have been better - consider switching:
-    Stream decimation — the firmware sends every Nth sample's DATA line; default 10. Lower = more data; higher = less serial traffic.
-    Sample rate — set in the Streaming section (10–250 Hz, default 100 Hz). The firmware gates samples with micros() so serial parsing still runs between samples.
+
+    Make the file path and recording aspects actually work!
+    Make TTL and triggers work by locating those pins and possibly updating firmware
+
     '''

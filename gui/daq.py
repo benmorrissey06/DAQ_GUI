@@ -3,6 +3,7 @@ from serial.tools import list_ports
 import time
 from datetime import datetime
 
+
 class DAQController:
     def __init__(self):
         self.serial = None
@@ -82,6 +83,29 @@ class DAQController:
             text = ""
         self.last_response = text
         return text
+
+    def parse_stream_data_line(self, text):
+        parts = text.split(",")
+        if len(parts) < 11:
+            return None
+
+        try:
+            raw_ir = int(parts[3])
+            raw_vis = int(parts[8])
+        except ValueError:
+            return None
+
+        return raw_ir, raw_vis
+
+    def handle_stream_line(self, line):
+        if not line:
+            return None
+
+        text = line.decode("utf-8", errors="ignore").strip()
+        if not text.startswith("DATA,"):
+            return None
+
+        return self.parse_stream_data_line(text)
 
     def turn_off(self):
         if self.is_open:
