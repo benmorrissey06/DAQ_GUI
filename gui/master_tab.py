@@ -76,6 +76,7 @@ class MasterTab:
                     dpg.add_button(label="Add Segment", callback=self.add_recording_segment)
                     with dpg.group(tag=self.t("protocol_group")):
                         dpg.add_text("")
+                    '''
                     dpg.add_separator()
                     dpg.add_text("TTL Outputs")
                     dpg.add_checkbox(label="Enable Closed Loop TTL", default_value=False, callback=self.show_TTL_options)
@@ -87,6 +88,7 @@ class MasterTab:
                         dpg.add_checkbox(label="Send Output Trigger", default_value=False, tag=self.t("send_output_trigger"), callback=self.set_trigger_option, user_data="send")
                         dpg.add_checkbox(label="Wait for Input Trigger", default_value=False, tag=self.t("wait_for_input_trigger"), callback=self.set_trigger_option, user_data="wait")
                     dpg.add_separator()
+                    '''
                     dpg.add_button(label="Save Recording Settings", callback=self.prepare_recording)
                     with dpg.group(tag=self.t("Confirm info")):
                         dpg.add_text("")

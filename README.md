@@ -89,6 +89,10 @@ Make overrides between master and individual intentional
 
 Make graph resume where you left off when you stop via Live button
 
+X button for tabs
+
+Refactor codebase since master tab and device tab share MANY functions, just copied and pasted. We should make those in a shared class (Toolbox class which holds these repeated functions? And the repeated ui code)  e.g. new function called draw_general_ctrls, and draw_recording_ctrls
+
 Add event column
 
 Make the light value entered in a time segment functional, currently that is only frontend

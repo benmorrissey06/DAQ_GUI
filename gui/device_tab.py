@@ -86,16 +86,17 @@ class DeviceTab:
         '''
         with dpg.tab(label=f"Device {self.tid}", parent=self.tab_bar_tag, tag=self.t("device_tab")):
             with dpg.group(horizontal=True):
-                with dpg.child_window(width=390, height=-65):
+                with dpg.child_window(width=250, height=-65):
                     with dpg.tab_bar():
                         #One tab here for each slider,this page has sliders and has stuff from before, custom controls are in other tab
-                        with dpg.tab(label="General Controls"):
+                        with dpg.tab(label="General"):
                             dpg.add_input_text(label="Animal ID", callback=self.set_animal_id)
                             dpg.add_separator()
                             dpg.add_spacer(height=10)
                             with dpg.group(tag=self.t('com_port_group')):
                                 self.view_ports()
                             dpg.add_spacer(height=10)
+                            dpg.add_text("Hardware Controls")
                             dpg.add_separator()
                             dpg.add_spacer(height=10)
                             self.slider_cmds = {
@@ -105,14 +106,16 @@ class DeviceTab:
                                 "VIS LED Gain": (VIS_LED_MAX, self.daq.set_vis_led_dac),
                             }
                             for label, (max_val, _) in self.slider_cmds.items():
-                                with dpg.group(horizontal=True):
-                                    dpg.add_slider_int(max_value=max_val, width=150, tag=self.t(f"s_{label}"), callback=self.on_slider_changed, user_data=label)
-                                    dpg.add_input_int(label=label, width=80, tag=self.t(f"i_{label}"), callback=self.on_slider_changed, user_data=label, step=0)
-                            dpg.add_spacer(height=20)
+                                with dpg.group(horizontal=False):
+                                    dpg.add_text(label)
+                                    with dpg.group(horizontal=True):
+                                        dpg.add_slider_int(max_value=max_val, width=150, tag=self.t(f"s_{label}"), callback=self.on_slider_changed, user_data=label)
+                                        dpg.add_input_int(label='', width=80, tag=self.t(f"i_{label}"), callback=self.on_slider_changed, user_data=label, step=0)       
                             dpg.add_separator()
-                            dpg.add_text("Streaming")
-                            dpg.add_input_int(label="Stream decimation", width=200, default_value=10, min_value=1, max_value=65535, tag=self.t("stream_decimation_input"), callback=self.set_stream_decimation)
-                            dpg.add_input_int(label="Sample rate (10-250 Hz)", width=200, default_value=100, min_value=10, max_value=250, tag=self.t("sample_rate_input"), callback=self.set_sample_rate)
+                            dpg.add_text("Stream decimation")
+                            dpg.add_input_int(label="", width=200, default_value=10, min_value=1, max_value=65535, tag=self.t("stream_decimation_input"), callback=self.set_stream_decimation)
+                            dpg.add_text("Sample rate (10-250 Hz)")
+                            dpg.add_input_int(label="", width=200, default_value=100, min_value=10, max_value=250, tag=self.t("sample_rate_input"), callback=self.set_sample_rate)
                             dpg.add_spacer(height=10)
                             dpg.add_separator()
                             dpg.add_text("LIVE")
@@ -120,18 +123,20 @@ class DeviceTab:
                             dpg.add_spacer(height=10)
 
                         #One tab here which has all these automation controls
-                        with dpg.tab(label="Recording Options", tag=self.t('recording_options')):
+                        with dpg.tab(label="Recording", tag=self.t('recording_options')):
                             dpg.add_spacer(height=10)
                             dpg.add_text("Start Recording: ")
                             dpg.add_separator()
-                            dpg.add_input_float(label="Duration (s)", width=200, callback=self.update_recording_duration)
+                            dpg.add_input_float(label="", width=200, callback=self.update_recording_duration)
+                            dpg.add_text("Recording Duration (s)")
                             dpg.add_spacer(height=10)
-                            dpg.add_text("Add Recording Segments: ")
                             dpg.add_separator()
+                            dpg.add_text("Add Recording Segments: ")
                             dpg.add_button(label="Add Segment", callback=self.add_recording_segment)
                             # The group will then appear here
                             with dpg.group(tag=self.t("protocol_group")):
                                 dpg.add_text("")
+                            '''
                             dpg.add_separator()
                             dpg.add_text("TTL Outputs")
                             dpg.add_checkbox(label="Enable Closed Loop TTL", default_value=False, callback=self.show_TTL_options)
@@ -143,6 +148,7 @@ class DeviceTab:
                                 dpg.add_checkbox(label="Send Output Trigger", default_value=False, tag=self.t("send_output_trigger"), callback=self.set_trigger_option, user_data="send")
                                 dpg.add_checkbox(label="Wait for Input Trigger", default_value=False, tag=self.t("wait_for_input_trigger"), callback=self.set_trigger_option, user_data="wait")
                             dpg.add_separator()
+                            '''
                             dpg.add_button(label="Save Recording Settings", callback=self.prepare_recording)
                             with dpg.group(tag=self.t("Confirm info")):
                                 dpg.add_text("")
