@@ -3,6 +3,7 @@ from serial.tools import list_ports
 import time
 from datetime import datetime
 '''
+HARDWARE
 All serial communication code should be handled in this file
 so, if there are any changes to the firmware, this file should be modified
 '''

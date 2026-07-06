@@ -89,8 +89,6 @@ Make it so theres an option to enter in numbers where the sliders are
 
 turning on and off multiple times from gui isnt working well
 
-Save settings as a json alongside csv of main data
-
 Allow multiple tabs if we need to control multiple devices at once
 
 Minor: Refresh COM Ports
