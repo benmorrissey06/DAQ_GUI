@@ -79,9 +79,13 @@ Better visualization of the ambient light sensor could be nice - checkbox to see
 ```text
 TO DO:
 
-Allow checkbox options to view voltage and current supplies to LED (making it 4 total graphs)
-
 Make the light value entered in a time segment functional, currently that is only frontend
+
+Add signs on graph for events
+
+Make it so theres an option to enter in numbers where the sliders are
+
+turning on and off multiple times from gui isnt working well
 
 Save settings as a json alongside csv of main data
 

@@ -84,16 +84,16 @@ class DAQController:
 
     def parse_stream_data_line(self, text):
         parts = text.split(",")
-        if len(parts) < 11:
+        if len(parts) < 12:
             return None
 
         try:
-            raw_ir = int(parts[3])
-            raw_vis = int(parts[8])
+            raw = tuple(int(parts[i]) for i in (3, 4, 5, 6))
         except ValueError:
             return None
 
-        return raw_ir, raw_vis
+        volts = tuple((r / 32768.0) * 5.0 for r in raw)
+        return raw, volts
 
     def handle_stream_line(self, line):
         if not line:

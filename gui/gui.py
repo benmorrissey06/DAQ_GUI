@@ -14,6 +14,9 @@ VIS_PD_MAX = 255
 IR_PD_MAX = 255
 VIS_LED_MAX = 4095
 
+CH_NAMES = ["CH1 (IR PD)", "CH2 (VIS PD)", "CH3 (VIS Current)", "CH4 (IR Current)"]
+CH_TAGS = ["ch1", "ch2", "ch3", "ch4"]
+
 class GUI:
     def __init__(self):
         #basic info
@@ -34,8 +37,8 @@ class GUI:
         self.date = datetime.now().strftime("%m%d%Y_%H%M")
         self.max_points = 5000 
         self.times = []
-        self.ir_data = []
-        self.vis_data = []
+        self.ch_data = [[] for _ in range(4)]
+        self.checked_order = []
         self.t0 = None
         self.plot_window_s = 10.0
 
@@ -105,7 +108,7 @@ class GUI:
                             dpg.add_separator()
                             dpg.add_text("Streaming")
                             dpg.add_input_int(label="Stream decimation", width=200, default_value=10, min_value=1, max_value=65535, tag="stream_decimation_input", callback=self.set_stream_decimation)
-                            dpg.add_input_int(label="Sample rate (Hz)", width=200, default_value=100, min_value=10, max_value=250, tag="sample_rate_input", callback=self.set_sample_rate)
+                            dpg.add_input_int(label="Sample rate (10-250 Hz)", width=200, default_value=100, min_value=10, max_value=250, tag="sample_rate_input", callback=self.set_sample_rate)
                             dpg.add_spacer(height=10)
                             dpg.add_separator()
                             dpg.add_text("LIVE")
@@ -142,28 +145,27 @@ class GUI:
                             dpg.add_spacer(height=10)
                             dpg.add_button(label="Browse Save Location", callback=self.browse_save_directory)
                             dpg.add_text("No folder selected", tag="save_dir_display")
-                            dpg.add_input_text(label = "File name",tag = "filename")
+                            dpg.add_text("", tag="filename")
                             dpg.add_separator()
                             dpg.add_button(label="START", tag="start_button", callback=self.start_recording)
                            
                             
 
-                with dpg.child_window(width=-1, height=-65):
-                    with dpg.group(horizontal=True):
-                        dpg.add_checkbox(label="IR Light", default_value=True, callback=self.toggle_plots, tag="cb_ir")
-                        dpg.add_checkbox(label="VIS Light", default_value=True, callback=self.toggle_plots, tag="cb_vis")
-                    
-                    with dpg.plot(label="IR Sensor Data", height=300, width=-1, tag="plot_ir"):
-                        dpg.add_plot_legend()
-                        dpg.add_plot_axis(dpg.mvXAxis, label="time (s)", tag="ir_x_axis")
-                        with dpg.plot_axis(dpg.mvYAxis, label="Sensor Value", tag="ir_y_axis"):
-                            dpg.add_line_series(self.x_data, self.y_data, label="IR Data", tag="ir_series")
-
-                    with dpg.plot(label="VIS Sensor Data", height=300, width=-1, tag="plot_vis"):
-                        dpg.add_plot_legend()
-                        dpg.add_plot_axis(dpg.mvXAxis, label="time (s)", tag="vis_x_axis")
-                        with dpg.plot_axis(dpg.mvYAxis, label="sensor Value", tag="vis_y_axis"):
-                            dpg.add_line_series(self.x_data, self.y_data, label="VIS data", tag="vis_series")
+                with dpg.child_window(width=-1, height=-65, tag="plot_panel"):
+                    with dpg.group(horizontal=True, tag="cb_group"):
+                        for i, name in enumerate(CH_NAMES):
+                            dpg.add_checkbox(label=name, default_value=False, callback=self.toggle_plots, tag=f"cb_{CH_TAGS[i]}")
+                    with dpg.group(tag="plot_staging", show=False):
+                        for i in range(4):
+                            tag = CH_TAGS[i]
+                            with dpg.group(tag=f"wrap_{tag}", show=False):
+                                with dpg.plot(label=CH_NAMES[i], height=300, width=-1, tag=f"plot_{tag}"):
+                                    dpg.add_plot_legend()
+                                    dpg.add_plot_axis(dpg.mvXAxis, label="time (s)", tag=f"{tag}_x_axis")
+                                    with dpg.plot_axis(dpg.mvYAxis, label="Volts", tag=f"{tag}_y_axis"):
+                                        dpg.add_line_series([], [], label=CH_NAMES[i], tag=f"{tag}_series")
+                    with dpg.group(tag="plot_container"):
+                        pass
     #Basic info``
     def collect_info(self, sender, app_data, user_data):
         label = dpg.get_item_label(sender)
@@ -233,70 +235,78 @@ class GUI:
 
     # Plotting
 
-    def update_plots(self, raw_ir, raw_vis, host_time):
+    def update_plots(self, volts, host_time):
         if self.t0 is None:
             self.t0 = host_time
 
         t = host_time - self.t0
         self.times.append(t)
-        self.ir_data.append(raw_ir)
-        self.vis_data.append(raw_vis)
+        for i in range(4):
+            self.ch_data[i].append(volts[i])
 
         cutoff = t - self.plot_window_s
         while self.times and self.times[0] < cutoff:
             self.times.pop(0)
-            self.ir_data.pop(0)
-            self.vis_data.pop(0)
+            for i in range(4):
+                self.ch_data[i].pop(0)
 
-        dpg.set_value("ir_series", [self.times, self.ir_data])
-        dpg.set_value("vis_series", [self.times, self.vis_data])
-
-        # This chunk lets it expand until reaches a 10 s window, and then holds that window still
-        if t > self.plot_window_s:
-            dpg.set_axis_limits("ir_x_axis", cutoff, t)
-            dpg.set_axis_limits("vis_x_axis", cutoff, t)
-        else:
-            dpg.set_axis_limits("ir_x_axis", 0, self.plot_window_s)
-            dpg.set_axis_limits("vis_x_axis", 0, self.plot_window_s)
-
-        dpg.fit_axis_data("ir_y_axis")
-        dpg.fit_axis_data("vis_y_axis")
+        for i, tag in enumerate(CH_TAGS):
+            dpg.set_value(f"{tag}_series", [self.times, self.ch_data[i]])
+            if t > self.plot_window_s:
+                dpg.set_axis_limits(f"{tag}_x_axis", cutoff, t)
+            else:
+                dpg.set_axis_limits(f"{tag}_x_axis", 0, self.plot_window_s)
+            dpg.fit_axis_data(f"{tag}_y_axis")
 
     def process_serial_line(self, line):
         parsed = self.daq.handle_stream_line(line)
         if parsed is None:
             return
 
-        raw_ir, raw_vis = parsed
-        self.update_plots(raw_ir, raw_vis, time.time())
-        
+        raw, volts = parsed
+        self.update_plots(volts, time.time())
+
         if self.is_recording and self.bin_file:
             try:
-                self.bin_file.write(int(raw_ir).to_bytes(2, byteorder='big', signed=True))
-                self.bin_file.write(int(raw_vis).to_bytes(2, byteorder='big', signed=True))
+                for r in raw:
+                    self.bin_file.write(int(r).to_bytes(2, byteorder='big', signed=True))
             except OverflowError:
                 pass
 
     def toggle_plots(self, sender, app_data, user_data):
-        '''
-        this function allows us to view either IR or VIS, or both simultaneously
-        with checkbox logic
-        '''
-        ir_checked = dpg.get_value("cb_ir")
-        vis_checked = dpg.get_value("cb_vis")
-        
-        if ir_checked and vis_checked:
-            dpg.configure_item("plot_ir", show=True, height=300)
-            dpg.configure_item("plot_vis", show=True, height=300)
-        elif ir_checked:
-            dpg.configure_item("plot_ir", show=True, height=-1)
-            dpg.configure_item("plot_vis", show=False)
-        elif vis_checked:
-            dpg.configure_item("plot_ir", show=False)
-            dpg.configure_item("plot_vis", show=True, height=-1)
-        else:
-            dpg.configure_item("plot_ir", show=False)
-            dpg.configure_item("plot_vis", show=False)
+        tag = sender.replace("cb_", "")
+        if app_data and tag not in self.checked_order:
+            self.checked_order.append(tag)
+        elif not app_data and tag in self.checked_order:
+            self.checked_order.remove(tag)
+        self._layout_plots()
+
+    def _layout_plots(self):
+        for tag in CH_TAGS:
+            dpg.move_item(f"wrap_{tag}", parent="plot_staging")
+            dpg.configure_item(f"wrap_{tag}", show=False)
+        dpg.delete_item("plot_container", children_only=True)
+        n = len(self.checked_order)
+        if n == 0:
+            return
+        h = (dpg.get_viewport_client_height() - 130) // (1 if n <= 2 else 2)
+        def place_row(items):
+            if len(items) == 1:
+                dpg.move_item(f"wrap_{items[0]}", parent="plot_container")
+                dpg.configure_item(f"wrap_{items[0]}", show=True)
+                dpg.configure_item(f"plot_{items[0]}", height=h, width=-1)
+            else:
+                tbl = dpg.add_table(parent="plot_container", header_row=False, policy=dpg.mvTable_SizingStretchSame)
+                dpg.add_table_column(parent=tbl)
+                dpg.add_table_column(parent=tbl)
+                r = dpg.add_table_row(parent=tbl)
+                for t in items:
+                    dpg.move_item(f"wrap_{t}", parent=r)
+                    dpg.configure_item(f"wrap_{t}", show=True)
+                    dpg.configure_item(f"plot_{t}", height=h, width=-1)
+        place_row(self.checked_order[:min(n, 2)])
+        if n > 2:
+            place_row(self.checked_order[2:])
 
     def live_plot_toggle(self, sender, app_data, user_data):
         self.is_live = not self.is_live
