@@ -83,6 +83,8 @@ Make the light value entered in a time segment functional, currently that is onl
 
 Add signs on graph for events
 
+Verify what settings should be in the json? segments too?
+
 Make it so theres an option to enter in numbers where the sliders are
 
 turning on and off multiple times from gui isnt working well
@@ -98,4 +100,6 @@ Adapt to any new firmware changes
 Quality of life and safety features
 
 Package in Executable program
+
+split gui.py into gui.py and save_recording.py, which handles all file stuff.
 ```

@@ -2,6 +2,8 @@ import dearpygui.dearpygui as dpg
 import threading
 import time
 import os
+import csv
+import json
 from tkinter import Tk, filedialog
 from daq import DAQController  
 from datetime import datetime
@@ -29,7 +31,8 @@ class GUI:
         self.is_live = False
         self.running = True
         self.file_name = ""
-        self.bin_file = None
+        self.csv_file = None
+        self.csv_writer = None
         self.save_directory = ""
         
         self.x_data = []
@@ -266,12 +269,8 @@ class GUI:
         raw, volts = parsed
         self.update_plots(volts, time.time())
 
-        if self.is_recording and self.bin_file:
-            try:
-                for r in raw:
-                    self.bin_file.write(int(r).to_bytes(2, byteorder='big', signed=True))
-            except OverflowError:
-                pass
+        if self.is_recording and self.csv_writer:
+            self.csv_writer.writerow([time.time()] + list(raw))
 
     def toggle_plots(self, sender, app_data, user_data):
         tag = sender.replace("cb_", "")
@@ -356,13 +355,16 @@ class GUI:
             self.prepare_recording()
             if self.no_overlap:
                 try:
-                    self.bin_file = open(f"{self.file_name}.bin", 'wb')
+                    self.csv_file = open(f"{self.file_name}.csv", 'w', newline='')
+                    self.csv_writer = csv.writer(self.csv_file)
+                    self.csv_writer.writerow(["host_time", "ch1_raw", "ch2_raw", "ch3_raw", "ch4_raw"])
                 except OSError as e:
                     dpg.delete_item("Confirm info", children_only=True)
                     dpg.add_text(f"Error: Cannot create file - {e}", parent="Confirm info")
                     self.is_recording = False
                     dpg.configure_item('start_button', label='START')
                     return
+                self.write_metadata_sidecar()
                 self.upload_schedule_to_daq()
             else:
                 self.is_recording = False
@@ -372,11 +374,12 @@ class GUI:
                     pass
         else:
             self.daq.stop_vis_schedule()
-            if self.bin_file:
-                self.bin_file.flush()
-                os.fsync(self.bin_file.fileno())
-                self.bin_file.close()
-                self.bin_file = None
+            if self.csv_file:
+                self.csv_file.flush()
+                os.fsync(self.csv_file.fileno())
+                self.csv_file.close()
+                self.csv_file = None
+                self.csv_writer = None
 
     def update_recording_duration(self, sender, app_data, user_data):
         self.recording_duration = app_data
@@ -534,13 +537,30 @@ class GUI:
         self.is_recording = False
         self.daq.stop_vis_schedule()
         
-        if self.bin_file:
-            self.bin_file.flush()
-            os.fsync(self.bin_file.fileno())
-            self.bin_file.close()
-            self.bin_file = None
+        if self.csv_file:
+            self.csv_file.flush()
+            os.fsync(self.csv_file.fileno())
+            self.csv_file.close()
+            self.csv_file = None
+            self.csv_writer = None
             
         dpg.configure_item('start_button', label='START')
+
+    def write_metadata_sidecar(self):
+        meta = {
+            "date": self.date,
+            "cohort": self.cohort or "",
+            "animal_id": self.animal_id or "",
+            "test_label": self.test_label or "",
+            "recording_duration": self.recording_duration,
+            "sample_rate": dpg.get_value("sample_rate_input"),
+            "decimation": dpg.get_value("stream_decimation_input"),
+            "vis_pd_gain": dpg.get_value("VIS PD Gain"),
+            "ir_pd_gain": dpg.get_value("IR PD Gain"),
+            "vis_led_dac": dpg.get_value("VIS LED Gain"),
+        }
+        with open(f"{self.file_name}.json", 'w') as f:
+            json.dump(meta, f, indent=2)
 
     def run(self):
         dpg.set_primary_window("main window", True)
