@@ -10,6 +10,7 @@ from datetime import datetime
 '''
 INTERFACE
 The visual GUI and file saving is handled in this file
+CURRENTLY NOT BEING USED SINCE WE INTRODUCED MULTIPLE DEVICE TABS, BUT STILL USEFUL FOR REFERENCE
 '''
 
 VIS_PD_MAX = 255

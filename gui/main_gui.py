@@ -4,7 +4,9 @@ from device_tab import DeviceTab
 
 '''
 MAIN APPLICATION
-Creates the viewport and tab bar. MasterTab is fixed; DeviceTabs are added via the + button.
+
+THIS CREATES THE APPLICATION
+it's short code that creates the main window and master tab, and allows for the creation of new device tabs via the + button.
 '''
 
 class MainGUI:

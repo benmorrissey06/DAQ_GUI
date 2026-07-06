@@ -9,7 +9,9 @@ from datetime import datetime
 
 '''
 DEVICE TAB
-Each tab manages one DAQ board: its own COM port, plots, and recording.
+
+An individual device tab, created via the + button in main GUI.
+Must connect to COM ports in this tab, for it to be controllable by master.
 '''
 
 VIS_PD_MAX = 255

@@ -6,7 +6,8 @@ from device_tab import VIS_PD_MAX, IR_PD_MAX, VIS_LED_MAX
 
 '''
 MASTER TAB
-Global controls that broadcast to all connected device tabs.
+Controls that will be applied to ALL connected devices.
+General controls, and recording controls.
 '''
 
 SLIDER_DEFS = {
