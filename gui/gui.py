@@ -172,7 +172,7 @@ class GUI:
                                         dpg.add_line_series([], [], label=CH_NAMES[i], tag=f"{tag}_series")
                     with dpg.group(tag="plot_container"):
                         pass
-    #Basic info``
+    #Basic info
     def collect_info(self, sender, app_data, user_data):
         label = dpg.get_item_label(sender)
         if label == "Cohort":

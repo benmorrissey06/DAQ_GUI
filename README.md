@@ -91,8 +91,6 @@ Add signs on graph for events
 
 Verify what settings should be in the json? segments too?
 
-Make it so theres an option to enter in numbers where the sliders are
-
 Allow multiple tabs if we need to control multiple devices at once 
 
 Adapt to any new firmware changes
