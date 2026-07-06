@@ -85,13 +85,13 @@ View events in the saved CSV and live on the graph
 ```text
 TO DO:
 
+Add event column
+
 Make the light value entered in a time segment functional, currently that is only frontend
 
 Add signs on graph for events
 
 Verify what settings should be in the json? segments too?
-
-Allow multiple tabs if we need to control multiple devices at once 
 
 Adapt to any new firmware changes
 
@@ -99,9 +99,4 @@ Quality of life and safety features
 
 Package in Executable program
 
-RECORDING FEATURES:
-Recording
-Duration — set in the Recording section of each device's controls sidebar (seconds; 0 = unlimited). A countdown shows elapsed / total time and the recording stops automatically when time is up.
-Event column — the CSV has an event column. Normal data rows have an empty event field. Every significant command sent during recording (device on/off, LED changes, gains, stream state, sample rate) is written as its own timestamped row with empty data columns. Filter with df[df['event'].notna()] in pandas.
-Metadata sidecar — a .json file (same base name as the .csv) is written when recording starts, capturing all settings in effect at that moment.
 ```
