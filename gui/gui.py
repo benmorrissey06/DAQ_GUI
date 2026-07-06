@@ -198,19 +198,23 @@ class GUI:
     # Connection /Hardware Control Buttons
 
     def view_ports(self):
+        dpg.delete_item('com_port_group', children_only=True)
         dpg.add_text('Connect to COM Port:', parent='com_port_group')
         dpg.add_separator(parent='com_port_group')
+        dpg.add_button(label='Refresh Ports', parent='com_port_group', callback=self.refresh_ports)
         availablePortsStrings = self.daq.get_available_ports()
         if availablePortsStrings:
             for port in availablePortsStrings:
-                dpg.add_button(label=port,parent='com_port_group',user_data=port, callback=self.connect_port,)
+                dpg.add_button(label=port, parent='com_port_group', user_data=port, callback=self.connect_port)
         else:
             dpg.add_text('No COM Ports detected', parent='com_port_group')
-            #Potentially: refresh button right here
+
+    def refresh_ports(self, sender=None, app_data=None, user_data=None):
+        self.view_ports()
 
     def connect_port(self, sender, app_data, user_data):
         self.daq.connect(user_data)
-        dpg.add_text("Connected!",parent = 'com_port_group')
+        dpg.add_text("Connected!", parent='com_port_group')
 
     # Slider Control
    

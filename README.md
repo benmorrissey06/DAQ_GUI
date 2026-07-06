@@ -87,17 +87,11 @@ Verify what settings should be in the json? segments too?
 
 Make it so theres an option to enter in numbers where the sliders are
 
-turning on and off multiple times from gui isnt working well
-
-Allow multiple tabs if we need to control multiple devices at once
-
-Minor: Refresh COM Ports
+Allow multiple tabs if we need to control multiple devices at once 
 
 Adapt to any new firmware changes
 
 Quality of life and safety features
 
 Package in Executable program
-
-split gui.py into gui.py and save_recording.py, which handles all file stuff.
 ```
