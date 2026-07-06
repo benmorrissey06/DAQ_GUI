@@ -100,10 +100,16 @@ class GUI:
                             dpg.add_spacer(height=10)
                             dpg.add_separator()
                             dpg.add_spacer(height=10)
-                            dpg.add_slider_int(label="IR LED Blink", max_value=1000, width=200, callback=self.on_slider_changed) 
-                            dpg.add_slider_int(label="VIS PD Gain", max_value=VIS_PD_MAX, width=200, callback=self.on_slider_changed) 
-                            dpg.add_slider_int(label="IR PD Gain", max_value=IR_PD_MAX, width=200, callback=self.on_slider_changed) 
-                            dpg.add_slider_int(label="VIS LED Gain", max_value=VIS_LED_MAX, width=200, callback=self.on_slider_changed)
+                            self.slider_cmds = {
+                                "IR LED Blink": (1000, self.daq.pulse_ir_led),
+                                "VIS PD Gain": (VIS_PD_MAX, self.daq.set_visible_pd_gain),
+                                "IR PD Gain": (IR_PD_MAX, self.daq.set_ir_pd_gain),
+                                "VIS LED Gain": (VIS_LED_MAX, self.daq.set_vis_led_dac),
+                            }
+                            for label, (max_val, _) in self.slider_cmds.items():
+                                with dpg.group(horizontal=True):
+                                    dpg.add_slider_int(max_value=max_val, width=150, tag=f"s_{label}", callback=self.on_slider_changed, user_data=label)
+                                    dpg.add_input_int(label=label, width=80, tag=f"i_{label}", callback=self.on_slider_changed, user_data=label, step=0)
                             dpg.add_spacer(height=20)
                             dpg.add_separator()
                             dpg.add_text("Streaming")
@@ -219,23 +225,9 @@ class GUI:
     # Slider Control
    
     def on_slider_changed(self, sender, app_data, user_data):
-        '''
-        This function is called whenever a slider is moved, and sends appropriate command over serial 
-        (send_command function handled in daq.py)
-        '''
-
-        if sender == "IR LED Blink":
-            print(f"IR LED Blink value: {app_data}")
-            self.daq.pulse_ir_led(app_data)
-        elif sender == "VIS PD Gain":
-            print(f"VIS PD Gain value: {app_data}")
-            self.daq.set_visible_pd_gain(app_data)
-        elif sender == "IR PD Gain":
-            print(f"IR PD Gain value: {app_data}")
-            self.daq.set_ir_pd_gain(app_data)
-        elif sender == "VIS LED Gain":
-            print(f"VIS LED Gain value: {app_data}")
-            self.daq.set_vis_led_dac(app_data)
+        dpg.set_value(f"s_{user_data}", app_data)
+        dpg.set_value(f"i_{user_data}", app_data)
+        self.slider_cmds[user_data][1](app_data)
 
     # Plotting
 
@@ -371,9 +363,9 @@ class GUI:
                     "recording_duration": self.recording_duration,
                     "sample_rate": dpg.get_value("sample_rate_input"),
                     "decimation": dpg.get_value("stream_decimation_input"),
-                    "vis_pd_gain": dpg.get_value("VIS PD Gain"),
-                    "ir_pd_gain": dpg.get_value("IR PD Gain"),
-                    "vis_led_dac": dpg.get_value("VIS LED Gain"),
+                    "vis_pd_gain": dpg.get_value("s_VIS PD Gain"),
+                    "ir_pd_gain": dpg.get_value("s_IR PD Gain"),
+                    "vis_led_dac": dpg.get_value("s_VIS LED Gain"),
                 })
                 self.upload_schedule_to_daq()
             else:

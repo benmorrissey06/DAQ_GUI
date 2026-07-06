@@ -73,7 +73,13 @@ Automatic file naming based on current time and entered data
 
 Ability to set timed UV light controls (e.g. 0-20s no UV light, 20-40s UV set to 250, 40+s UV set to 230) during a recording from the gui (CURRENTLY ONLY FRONTEND)
 
-Better visualization of the ambient light sensor could be nice - checkbox to see whatever graph you like
+Better visualization of the ambient light sensor, all four channels visible via checkbox options
+
+Control multiple devices at once
+
+save results as CSV and capture recording settings in a json
+
+View events in the saved CSV and live on the graph
 ```
 
 ```text
@@ -94,4 +100,10 @@ Adapt to any new firmware changes
 Quality of life and safety features
 
 Package in Executable program
+
+RECORDING FEATURES:
+Recording
+Duration — set in the Recording section of each device's controls sidebar (seconds; 0 = unlimited). A countdown shows elapsed / total time and the recording stops automatically when time is up.
+Event column — the CSV has an event column. Normal data rows have an empty event field. Every significant command sent during recording (device on/off, LED changes, gains, stream state, sample rate) is written as its own timestamped row with empty data columns. Filter with df[df['event'].notna()] in pandas.
+Metadata sidecar — a .json file (same base name as the .csv) is written when recording starts, capturing all settings in effect at that moment.
 ```
