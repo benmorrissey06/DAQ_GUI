@@ -1,2 +1,3 @@
 dearpygui >= 1.0.0
+dearpygui-ext
 pyserial==3.5

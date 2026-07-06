@@ -85,6 +85,10 @@ View events in the saved CSV and live on the graph
 ```text
 TO DO:
 
+Make overrides between master and individual intentional
+
+Make graph resume where you left off when you stop via Live button
+
 Add event column
 
 Make the light value entered in a time segment functional, currently that is only frontend

@@ -1,6 +1,7 @@
 import dearpygui.dearpygui as dpg
 from master_tab import MasterTab
 from device_tab import DeviceTab
+import dearpygui_ext.themes as dpg_ext
 
 '''
 MAIN APPLICATION
@@ -16,6 +17,8 @@ class MainGUI:
         self.master = None
 
         dpg.create_context()
+        light_theme = dpg_ext.create_theme_imgui_light() #We must use light mode. This is where we set the theme.
+        dpg.bind_theme(light_theme)
         self.build_ui()
         dpg.create_viewport(title='Pegard and Rodriguez Romaguera Labs', width=1200, height=800)
         dpg.setup_dearpygui()

@@ -154,6 +154,7 @@ class DeviceTab:
                             dpg.add_button(label="START", tag=self.t("start_button"), callback=self.start_recording)
 
                 with dpg.child_window(width=-1, height=-65, tag=self.t("plot_panel")):
+                    dpg.add_input_int(label="Plot Window (s)", width=200, default_value=10, min_value=1, max_value=60, tag=self.t("plot_window_input"), callback=self.update_plot_window_s)
                     with dpg.group(horizontal=True, tag=self.t("cb_group")):
                         for i, name in enumerate(CH_NAMES):
                             dpg.add_checkbox(label=name, default_value=False, callback=self.toggle_plots, tag=self.t(f"cb_{CH_TAGS[i]}"), user_data=CH_TAGS[i])
@@ -221,6 +222,8 @@ class DeviceTab:
         self.slider_cmds[user_data][1](app_data)
 
     # Plotting
+    def update_plot_window_s(self, sender, app_data, user_data):
+        self.plot_window_s = app_data
 
     def update_plots(self, volts, host_time):
         if self.t0 is None:
