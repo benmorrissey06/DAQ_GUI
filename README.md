@@ -87,7 +87,7 @@ TO DO:
 
 Make overrides between master and individual intentional
 
-Make graph resume where you left off when you stop via Live button
+Make graph resume where you left off when you stop via Live button***
 
 X button for tabs
 

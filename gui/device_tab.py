@@ -84,7 +84,7 @@ class DeviceTab:
         to allow easy manipulation of the layout via a code interface, 
         and this easily separates  hardware commands code (in daq.py) from code for the GUI "frontend"or visual elements
         '''
-        with dpg.tab(label=f"Device {self.tid}", parent=self.tab_bar_tag, tag=self.t("device_tab")):
+        with dpg.tab(label=f"Device {self.tid}", parent=self.tab_bar_tag, tag=self.t("device_tab"), before="add_tab_button"):
             with dpg.group(horizontal=True):
                 with dpg.child_window(width=250, height=-65):
                     with dpg.tab_bar():
@@ -388,7 +388,7 @@ class DeviceTab:
         row_tag = self.t(f"row_{sc}")
         self.active_rows.append((row_tag, sc))
 
-        with dpg.group(horizontal=True, parent=self.t("protocol_group"), tag=row_tag):
+        with dpg.group(horizontal=False, parent=self.t("protocol_group"), tag=row_tag):
             dpg.add_separator()
             dpg.add_input_int(label="Start (s)", width=100, step=0, tag=self.t(f"start_{sc}"))
             dpg.add_input_int(label="End (s)", width=100, step=0, tag=self.t(f"end_{sc}"))

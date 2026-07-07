@@ -33,7 +33,6 @@ class MainGUI:
         self.tab_counter += 1
         tab = DeviceTab(self.tab_counter, "main_tab_bar", self)
         self.device_tabs.append(tab)
-        dpg.move_item("add_tab_button", parent="main_tab_bar")
 
     def run(self):
         dpg.set_primary_window("main window", True)
