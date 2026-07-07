@@ -85,6 +85,8 @@ View events in the saved CSV and live on the graph
 ```text
 TO DO:
 
+Make it so that resizing plots does not erase previous data
+
 Make overrides between master and individual intentional
 
 Make graph resume where you left off when you stop via Live button***

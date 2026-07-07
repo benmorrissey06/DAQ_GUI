@@ -42,6 +42,7 @@ class DeviceTab:
         self.checked_order = []
         self.t0 = None
         self.plot_window_s = 10.0
+        self.ch4_active = False
 
         self.light_values = []
         self.time_stamps = []
@@ -159,28 +160,34 @@ class DeviceTab:
                             dpg.add_separator()
                             dpg.add_button(label="START", tag=self.t("start_button"), callback=self.start_recording)
 
-                with dpg.child_window(width=-1, height=-65, tag=self.t("plot_panel")):
-                    dpg.add_input_int(label="Plot Window (s)", width=200, default_value=10, min_value=1, max_value=60, tag=self.t("plot_window_input"), callback=self.update_plot_window_s)
-                    with dpg.group(horizontal=True, tag=self.t("cb_group")):
-                        for i, name in enumerate(CH_NAMES):
-                            dpg.add_checkbox(label=name, default_value=False, callback=self.toggle_plots, tag=self.t(f"cb_{CH_TAGS[i]}"), user_data=CH_TAGS[i])
-                    with dpg.group(tag=self.t("plot_staging"), show=False):
-                        for i in range(4):
-                            ch = CH_TAGS[i]
-                            with dpg.group(tag=self.t(f"wrap_{ch}"), show=False):
-                                with dpg.plot(label=CH_NAMES[i], height=300, width=-1, tag=self.t(f"plot_{ch}")):
-                                    dpg.add_plot_legend()
-                                    dpg.add_plot_axis(dpg.mvXAxis, label="time (s)", tag=self.t(f"{ch}_x_axis"))
-                                    with dpg.plot_axis(dpg.mvYAxis, label="Volts", tag=self.t(f"{ch}_y_axis")):
-                                        dpg.add_line_series([], [], label=CH_NAMES[i], tag=self.t(f"{ch}_series"))
-                    with dpg.group(tag=self.t("plot_container")):
-                        pass
+                with dpg.child_window(width=-1, height=-65, tag=self.t("plot_panel"), show=True):
+                    dpg.configure_item(self.t("plot_panel"), show=True)
+                    with dpg.group(horizontal=True, tag=self.t("plot_header_controls"), show=True):
+                        dpg.add_input_int(label="Plot Window (s)", width=100, default_value=10, min_value=1, max_value=60, tag=self.t("plot_window_input"), callback=self.update_plot_window_s)
+                        dpg.add_combo(label="Select Bottom Right Channel", width=300, items=["CH3 (VIS Current)", "CH4 (IR Current)"], default_value="CH3 (VIS Current)", callback=self.toggle_plots, tag=self.t("bottom_right_combo"))
+                    with dpg.group(tag=self.t("plot_area"), show=True):
+                        with dpg.group(tag=self.t("plot_staging"), show=True):
+                            for i in range(4):
+                                ch = CH_TAGS[i]
+                                with dpg.group(tag=self.t(f"wrap_{ch}"), show=True):
+                                    with dpg.plot(label=CH_NAMES[i], height=300, width=-1, tag=self.t(f"plot_{ch}")):
+                                        dpg.add_plot_legend()
+                                        dpg.add_plot_axis(dpg.mvXAxis, label="time (s)", tag=self.t(f"{ch}_x_axis"))
+                                        with dpg.plot_axis(dpg.mvYAxis, label="Volts", tag=self.t(f"{ch}_y_axis")):
+                                            dpg.add_line_series([], [], label=CH_NAMES[i], tag=self.t(f"{ch}_series"))
+                        with dpg.group(tag=self.t("plot_container"), show=True):
+                            pass
+
+            self._layout_plots()
 
     #Basic info
     def set_animal_id(self, sender, app_data, user_data):
         self.animal_id = app_data
 
     def browse_save_directory(self, sender=None, app_data=None, user_data=None):
+        '''
+        file browser pop up
+        '''
         root = Tk()
         root.withdraw()
         root.attributes('-topmost', True)
@@ -232,6 +239,9 @@ class DeviceTab:
         self.plot_window_s = app_data
 
     def update_plots(self, volts, host_time):
+        '''
+        update the plots as data comes in
+        '''
         if self.t0 is None:
             self.t0 = host_time
 
@@ -255,6 +265,9 @@ class DeviceTab:
             dpg.fit_axis_data(self.t(f"{ch}_y_axis"))
 
     def process_serial_line(self, line):
+        '''
+        save data we received from DAQ so we can update plots, also save with write_row from save_recording.py if we are recording
+        '''
         parsed = self.daq.handle_stream_line(line)
         if parsed is None:
             return
@@ -266,41 +279,60 @@ class DeviceTab:
             self.recorder.write_row(raw)
 
     def toggle_plots(self, sender, app_data, user_data):
-        tag = user_data
-        if app_data and tag not in self.checked_order:
-            self.checked_order.append(tag)
-        elif not app_data and tag in self.checked_order:
-            self.checked_order.remove(tag)
+        if app_data == "CH3 (VIS Current)":
+            self.ch4_active = False
+        elif app_data == "CH4 (IR Current)":
+            self.ch4_active = True
         self._layout_plots()
 
     def _layout_plots(self):
-        for ch in CH_TAGS:
+        '''
+        layout the plots in a 2x2 grid, with IR PD permanently occupying top 2, VIS PD permanently bottom left. 
+        Bottom right can be selected
+
+        This part is one of the hardest to read, but is necessary to achieve a flexible layout
+        I don't recommend editing unless you are familiar with all the tags, and how tables, columns, and rows function. 
+        '''
+        dpg.configure_item(self.t("plot_panel"), show=True)
+        dpg.configure_item(self.t("plot_area"), show=True)
+        dpg.configure_item(self.t("plot_staging"), show=True)
+        dpg.configure_item(self.t("plot_container"), show=True)
+        dpg.configure_item(self.t("bottom_right_combo"), show=True)
+
+        for ch in CH_TAGS: #this acts as a reset so previous graphs are no longer showing
             dpg.move_item(self.t(f"wrap_{ch}"), parent=self.t("plot_staging"))
             dpg.configure_item(self.t(f"wrap_{ch}"), show=False)
+
         dpg.delete_item(self.t("plot_container"), children_only=True)
-        n = len(self.checked_order)
-        if n == 0:
-            return
-        h = (dpg.get_viewport_client_height() - 130) // (1 if n <= 2 else 2)
-        def place_row(items):
-            if len(items) == 1:
-                dpg.move_item(self.t(f"wrap_{items[0]}"), parent=self.t("plot_container"))
-                dpg.configure_item(self.t(f"wrap_{items[0]}"), show=True)
-                dpg.configure_item(self.t(f"plot_{items[0]}"), height=h, width=-1)
-            else:
-                tbl = dpg.add_table(parent=self.t("plot_container"), header_row=False, policy=dpg.mvTable_SizingStretchSame)
-                dpg.add_table_column(parent=tbl)
-                dpg.add_table_column(parent=tbl)
-                r = dpg.add_table_row(parent=tbl)
-                for c in items:
-                    dpg.move_item(self.t(f"wrap_{c}"), parent=r)
-                    dpg.configure_item(self.t(f"wrap_{c}"), show=True)
-                    dpg.configure_item(self.t(f"plot_{c}"), height=h, width=-1)
-        place_row(self.checked_order[:min(n, 2)])
-        if n > 2:
-            place_row(self.checked_order[2:])
+        #Top table with only one column, spanned by ch1
+        top_table = dpg.add_table(parent=self.t("plot_container"), header_row=False)
+        dpg.add_table_column(parent=top_table)
+        top_row = dpg.add_table_row(parent=top_table)
+        dpg.move_item(self.t("wrap_ch1"), parent=top_row)
+        dpg.configure_item(self.t("wrap_ch1"), show=True)
+        dpg.configure_item(self.t("plot_ch1"), width=-1, height=300)
+
+        #Bottom table has two columns, so we can have ch2 on the left, and condition to have ch3 or 4 on right. they split the area evenly, which is caused by there being two columns.
+        bottom_table = dpg.add_table(parent=self.t("plot_container"), header_row=False)
+        dpg.add_table_column(parent=bottom_table)
+        dpg.add_table_column(parent=bottom_table)
+        bottom_row = dpg.add_table_row(parent=bottom_table)
+        dpg.move_item(self.t("wrap_ch2"), parent=bottom_row)
+        dpg.configure_item(self.t("wrap_ch2"), show=True)
+        dpg.configure_item(self.t("plot_ch2"), width=-1, height=300)
+        if self.ch4_active:
+            dpg.move_item(self.t("wrap_ch4"), parent=bottom_row)
+            dpg.configure_item(self.t("wrap_ch4"), show=True)
+            dpg.configure_item(self.t("plot_ch4"), width=-1, height=300)
+        else:
+            dpg.move_item(self.t("wrap_ch3"), parent=bottom_row)
+            dpg.configure_item(self.t("wrap_ch3"), show=True)
+            dpg.configure_item(self.t("plot_ch3"), width=-1, height=300)
 
     def live_plot_toggle(self, sender, app_data, user_data):
+        '''
+        Turn streaming on or off
+        '''
         self.is_live = not self.is_live
         label = "ON" if self.is_live else "OFF"
         dpg.configure_item(self.t("live_button"), label=label)
@@ -355,6 +387,7 @@ class DeviceTab:
                     self.is_recording = False
                     dpg.configure_item(self.t('start_button'), label='START')
                     return
+                #capture current settings for json file
                 self.recorder.write_metadata_sidecar({
                     "date": self.date,
                     "cohort": self.app.master.cohort or "",
