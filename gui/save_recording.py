@@ -16,11 +16,13 @@ class DataRecorder:
     def open_csv(self):
         self.csv_file = open(f"{self.file_name}.csv", 'w', newline='')
         self.csv_writer = csv.writer(self.csv_file)
-        self.csv_writer.writerow(["host_time", "ch1_raw", "ch2_raw", "ch3_raw", "ch4_raw"])
+        self.csv_writer.writerow(["host_time", "ch1_raw", "ch2_raw", "ch3_raw", "ch4_raw", "event"])
 
-    def write_row(self, raw):
+    def write_row(self, raw=None, event=""):
         if self.csv_writer:
-            self.csv_writer.writerow([time.time()] + list(raw))
+            if raw is None:
+                raw = ["", "", "", ""]
+            self.csv_writer.writerow([time.time()] + list(raw) + [event])
 
     def close_csv(self):
         if self.csv_file:

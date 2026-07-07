@@ -87,6 +87,8 @@ TO DO:
 
 Make it so that resizing plots does not erase previous data
 
+Add apply button for sliders
+
 Make overrides between master and individual intentional
 
 Make graph resume where you left off when you stop via Live button***

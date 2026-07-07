@@ -114,18 +114,21 @@ class MasterTab:
         for tab in self.app.device_tabs:
             if tab.daq.is_open:
                 getattr(tab.daq, method_name)(app_data)
+                tab.record_event(f"MASTER_{user_data}", value=app_data, event_type="control")
 
     def set_stream_decimation(self, sender, app_data, user_data):
         value = max(1, int(app_data))
         for tab in self.app.device_tabs:
             if tab.daq.is_open:
                 tab.daq.set_adc_stream_decimation(value)
+                tab.record_event("MASTER_STREAM_DECIMATION", value=value, event_type="stream")
 
     def set_sample_rate(self, sender, app_data, user_data):
         value = max(10, min(250, int(app_data)))
         for tab in self.app.device_tabs:
             if tab.daq.is_open:
                 tab.daq.set_sample_rate(value)
+                tab.record_event("MASTER_SAMPLE_RATE", value=value, event_type="stream")
 
     def live_toggle_all(self, sender, app_data, user_data):
         self.is_live = not self.is_live
@@ -140,9 +143,11 @@ class MasterTab:
                     tab.daq.set_adc_stream_decimation(int(dpg.get_value(self.t("stream_decimation_input"))))
                     tab.daq.set_sample_rate(int(dpg.get_value(self.t("sample_rate_input"))))
                     tab.daq.start_device()
+                    tab.record_event("MASTER_LIVE_ON", value=1, event_type="live")
                 else:
                     tab.daq.set_adc_streaming(False)
                     tab.daq.stop_device()
+                    tab.record_event("MASTER_LIVE_OFF", value=0, event_type="live")
 
     def update_recording_duration(self, sender, app_data, user_data):
         self.recording_duration = app_data

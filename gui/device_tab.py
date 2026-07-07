@@ -20,6 +20,13 @@ VIS_LED_MAX = 4095
 
 CH_NAMES = ["CH1 (IR PD)", "CH2 (VIS PD)", "CH3 (VIS Current)", "CH4 (IR Current)"]
 CH_TAGS = ["ch1", "ch2", "ch3", "ch4"]
+EVENT_COLORS = {
+    "live": [0, 102, 204, 255],
+    "record": [0, 153, 76, 255],
+    "control": [255, 140, 0, 255],
+    "stream": [128, 0, 128, 255],
+    "uv": [204, 0, 102, 255],
+}
 
 class DeviceTab:
     def __init__(self, tid, tab_bar_tag, app):
@@ -50,6 +57,7 @@ class DeviceTab:
         self.active_rows = []
         self.is_recording = False
         self.ttl_drops_below = True
+        self._plot_event_line_tags = {ch: [] for ch in CH_TAGS}
 
         '''
         Variables for trigger integration and TTL 
@@ -128,7 +136,7 @@ class DeviceTab:
                             dpg.add_spacer(height=10)
                             dpg.add_text("Start Recording: ")
                             dpg.add_separator()
-                            dpg.add_input_float(label="", width=200, callback=self.update_recording_duration)
+                            dpg.add_input_float(label="", width=200, default_value=300.0, min_value=1.0, max_value=3600.0, callback=self.update_recording_duration)
                             dpg.add_text("Recording Duration (s)")
                             dpg.add_spacer(height=10)
                             dpg.add_separator()
@@ -159,6 +167,23 @@ class DeviceTab:
                             dpg.add_text("", tag=self.t("filename"))
                             dpg.add_separator()
                             dpg.add_button(label="START", tag=self.t("start_button"), callback=self.start_recording)
+                            with dpg.group(tag=self.t("event_legend"), show=True):
+                                dpg.add_text("Event legend")
+                                with dpg.group(horizontal=True):
+                                    dpg.add_text("●", color=EVENT_COLORS["live"])
+                                    dpg.add_text("Live on/off")
+                                with dpg.group(horizontal=True):
+                                    dpg.add_text("●", color=EVENT_COLORS["record"])
+                                    dpg.add_text("Record start/stop")
+                                with dpg.group(horizontal=True):
+                                    dpg.add_text("●", color=EVENT_COLORS["control"])
+                                    dpg.add_text("Gain / LED changes")
+                                with dpg.group(horizontal=True):
+                                    dpg.add_text("●", color=EVENT_COLORS["stream"])
+                                    dpg.add_text("Stream / sample rate")
+                                with dpg.group(horizontal=True):
+                                    dpg.add_text("●", color=EVENT_COLORS["uv"])
+                                    dpg.add_text("UV segment changes")
 
                 with dpg.child_window(width=-1, height=-65, tag=self.t("plot_panel"), show=True):
                     dpg.configure_item(self.t("plot_panel"), show=True)
@@ -233,10 +258,49 @@ class DeviceTab:
         dpg.set_value(self.t(f"s_{user_data}"), app_data)
         dpg.set_value(self.t(f"i_{user_data}"), app_data)
         self.slider_cmds[user_data][1](app_data)
+        self.record_event(f"{user_data}={app_data}", value=app_data, event_type="control")
 
     # Plotting
     def update_plot_window_s(self, sender, app_data, user_data):
         self.plot_window_s = app_data
+
+    def _plot_time(self, host_time=None):
+        if host_time is None:
+            host_time = time.time()
+        if self.t0 is None:
+            return 0.0
+        return host_time - self.t0
+
+    def _add_event_line(self, label, host_time, color, event_type, thickness=1.0):
+        x_value = self._plot_time(host_time)
+        for ch in CH_TAGS:
+            if not dpg.does_item_exist(self.t(f"plot_{ch}")):
+                continue
+            line_tag = self.t(f"{ch}_event_{len(self._plot_event_line_tags[ch])}")
+            dpg.add_drag_line(
+                parent=self.t(f"plot_{ch}"),
+                tag=line_tag,
+                label=label,
+                default_value=x_value,
+                color=color,
+                thickness=thickness,
+                show_label=True,
+                vertical=True,
+                no_inputs=True,
+            )
+            self._plot_event_line_tags[ch].append(line_tag)
+
+    def record_event(self, message, value=None, event_type="control", host_time=None, write_to_csv=True, thickness=2.0):
+        if host_time is None:
+            host_time = time.time()
+        if value is None:
+            label = message
+        else:
+            label = f"{message}={value}"
+        color = EVENT_COLORS.get(event_type, EVENT_COLORS["control"])
+        self._add_event_line(label, host_time, color, event_type, thickness=thickness)
+        if write_to_csv and self.is_recording and self.recorder.csv_writer:
+            self.recorder.write_row(event=label)
 
     def update_plots(self, volts, host_time):
         '''
@@ -341,9 +405,11 @@ class DeviceTab:
             self.daq.set_adc_stream_decimation(int(dpg.get_value(self.t("stream_decimation_input"))))
             self.daq.set_sample_rate(int(dpg.get_value(self.t("sample_rate_input"))))
             self.daq.start_device()
+            self.record_event("LIVE_ON", value=1, event_type="live")
         else:
             self.daq.set_adc_streaming(False)
             self.daq.stop_device()
+            self.record_event("LIVE_OFF", value=0, event_type="live")
 
     # Recording Control
    
@@ -370,6 +436,9 @@ class DeviceTab:
         self.is_recording = not getattr(self, 'is_recording', False)
         if self.is_recording:
             self.start_time = time.time()
+            self.record_event("RECORDING_START", event_type="record")
+        else:
+            self.record_event("RECORDING_STOP", event_type="record")
         label = "STOP" if self.is_recording else "START"
         try:
             dpg.configure_item(self.t('start_button'), label=label)
@@ -489,8 +558,12 @@ class DeviceTab:
             return
         self.daq.clear_vis_schedule()
         for i in range(len(self.time_stamps)):
-            self.daq.append_schedule_step(self.time_stamps[i][0], self.light_values[i])
-            self.daq.append_schedule_step(self.time_stamps[i][1], 0)
+            start_s, end_s = self.time_stamps[i]
+            uv_val = self.light_values[i]
+            self.daq.append_schedule_step(start_s, uv_val)
+            self.daq.append_schedule_step(end_s, 0)
+            self.record_event("UV", value=uv_val, event_type="uv", host_time=self.start_time + start_s)
+            self.record_event("UV", value=0, event_type="uv", host_time=self.start_time + end_s)
         self.daq.start_vis_schedule()
 
     # TTL Options
@@ -537,10 +610,12 @@ class DeviceTab:
     def set_stream_decimation(self, sender, app_data, user_data):
         value = max(1, int(app_data))
         self.daq.set_adc_stream_decimation(value)
+        self.record_event("STREAM_DECIMATION", value=value, event_type="stream")
 
     def set_sample_rate(self, sender, app_data, user_data):
         value = max(10, min(250, int(app_data)))
         self.daq.set_sample_rate(value)
+        self.record_event("SAMPLE_RATE", value=value, event_type="stream")
  
     # general
 
