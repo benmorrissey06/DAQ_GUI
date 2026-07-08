@@ -110,8 +110,6 @@ Make graph resume where you left off when you stop via Live button***
 
 X button for tabs
 
-rename uv into more sensible name
-
 Make buttons on master toggle on ones in individual device
 
 Make master set buttons functional
@@ -119,8 +117,6 @@ Make master set buttons functional
 Refactor codebase since master tab and device tab share MANY functions, just copied and pasted. We should make those in a shared class (Toolbox class which holds these repeated functions? And the repeated ui code)  e.g. new function called draw_general_ctrls, and draw_recording_ctrls (Add set button to master as part of this)
 
 Make the light value entered in a time segment functional, currently that is only frontend
-
-Add signs on graph for events
 
 Verify what settings should be in the json? segments too?
 
