@@ -140,13 +140,13 @@ class DeviceTab:
                                     dpg.add_text("Record start/stop")
                                 with dpg.group(horizontal=True):
                                     dpg.add_text("[ORANGE]", color=EVENT_COLORS["control"])
-                                    dpg.add_text("Gain / LED changes")
+                                    dpg.add_text("Slider Gain / LED")
                                 with dpg.group(horizontal=True):
                                     dpg.add_text("[PURPLE]", color=EVENT_COLORS["stream"])
-                                    dpg.add_text("Stream / sample rate")
+                                    dpg.add_text("Sample rate / Decimation")
                                 with dpg.group(horizontal=True):
                                     dpg.add_text("[PINK]", color=EVENT_COLORS["uv"])
-                                    dpg.add_text("UV segment changes")
+                                    dpg.add_text("LED Changes (Via Schedule)")
 
                         #One tab here which has all these automation controls
                         with dpg.tab(label="Recording", tag=self.t('recording_options')):
