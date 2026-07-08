@@ -131,22 +131,23 @@ class DeviceTab:
                                 dpg.add_button(label="OFF", tag=self.t("live_button"), callback=self.live_plot_toggle)
                             dpg.add_separator()
                             with dpg.group(tag=self.t("event_legend"), show=True):
-                                dpg.add_text("Event legend")
-                                with dpg.group(horizontal=True):
-                                    dpg.add_text("[BLUE]", color=EVENT_COLORS["live"])
-                                    dpg.add_text("Live on/off")
-                                with dpg.group(horizontal=True):
-                                    dpg.add_text("[GREEN]", color=EVENT_COLORS["record"])
-                                    dpg.add_text("Record start/stop")
-                                with dpg.group(horizontal=True):
-                                    dpg.add_text("[ORANGE]", color=EVENT_COLORS["control"])
-                                    dpg.add_text("Slider Gain / LED")
-                                with dpg.group(horizontal=True):
-                                    dpg.add_text("[PURPLE]", color=EVENT_COLORS["stream"])
-                                    dpg.add_text("Sample rate / Decimation")
-                                with dpg.group(horizontal=True):
-                                    dpg.add_text("[PINK]", color=EVENT_COLORS["uv"])
-                                    dpg.add_text("LED Changes (Via Schedule)")
+                                dpg.add_checkbox(label ="Show Event Color Key",default_value = False,callback=self.toggle_event_legend)
+                                with dpg.group(horizontal=False,tag = self.t("event_legend_group"), show=False):
+                                    with dpg.group(horizontal = True):
+                                        dpg.add_text("[BLUE]", color=EVENT_COLORS["live"])
+                                        dpg.add_text("Live on/off")
+                                    with dpg.group(horizontal=True):
+                                        dpg.add_text("[GREEN]", color=EVENT_COLORS["record"])
+                                        dpg.add_text("Record start/stop")
+                                    with dpg.group(horizontal=True):
+                                        dpg.add_text("[ORANGE]", color=EVENT_COLORS["control"])
+                                        dpg.add_text("Slider Gain / LED")
+                                    with dpg.group(horizontal=True):
+                                        dpg.add_text("[PURPLE]", color=EVENT_COLORS["stream"])
+                                        dpg.add_text("Sample rate / Decimation")
+                                    with dpg.group(horizontal=True):
+                                        dpg.add_text("[PINK]", color=EVENT_COLORS["uv"])
+                                        dpg.add_text("LED Changes (Via Schedule)")
 
                         #One tab here which has all these automation controls
                         with dpg.tab(label="Recording", tag=self.t('recording_options')):
@@ -640,6 +641,10 @@ class DeviceTab:
         self.record_event("SAMPLE_RATE", value=value, event_type="stream")
  
     # general
+
+    def toggle_event_legend(self, sender, app_data, user_data):
+        show = app_data
+        dpg.configure_item(self.t("event_legend_group"), show=show)
 
     def hardware_thread(self):
         while self.running:
