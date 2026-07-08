@@ -56,13 +56,17 @@ python3 gui/main.py
 
 ## Usage Instructions
 
+Click the + button tab to add a device
+
 Click the button for desired COM Port
 
 Turn on LIVE to begin streaming and start device
 
 Apply desired settings in General Controls, or set up a timed recording with a variety of options in Recording Controls
 
-Select which plots you would like to view from the checkboxes on the right window of the screen
+Select which plots you would like to view from the dropdown on the right window of the screen
+
+Switch to master tab to apply settings that affect all devices
 
 ## Key Features
 
