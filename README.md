@@ -84,6 +84,14 @@ View events in the saved CSV and live on the graph
 
 ```text
 TO DO:
+PROPER CSV FORMAT!
+Column	Type	Notes
+host_time	float	time.time() on the PC
+sample_counter	int	Firmware counter; empty on event rows
+high_ch1–high_ch4	int	Raw ADC counts, IR LED on; empty on event rows
+low_ch1–low_ch4	int	Raw ADC counts, IR LED off; empty on event rows
+difference_ch1–difference_ch4	int	high − low; empty on event rows
+event	str	Description; empty on data rows
 
 Make it so that resizing plots does not erase previous data
 

@@ -101,15 +101,13 @@ class DeviceTab:
                         with dpg.tab(label="General"):
                             dpg.add_input_text(label="Animal ID", callback=self.set_animal_id)
                             dpg.add_separator()
-                            dpg.add_spacer(height=10)
                             with dpg.group(tag=self.t('com_port_group')):
                                 self.view_ports()
                             dpg.add_spacer(height=10)
                             dpg.add_text("Hardware Controls")
                             dpg.add_separator()
-                            dpg.add_spacer(height=10)
                             self.slider_cmds = {
-                                "IR LED Blink": (1000, self.daq.pulse_ir_led),
+                                "IR LED Intensity": (1000, self.daq.pulse_ir_led),
                                 "VIS PD Gain": (VIS_PD_MAX, self.daq.set_visible_pd_gain),
                                 "IR PD Gain": (IR_PD_MAX, self.daq.set_ir_pd_gain),
                                 "VIS LED Gain": (VIS_LED_MAX, self.daq.set_vis_led_dac),
@@ -118,25 +116,44 @@ class DeviceTab:
                                 with dpg.group(horizontal=False):
                                     dpg.add_text(label)
                                     with dpg.group(horizontal=True):
-                                        dpg.add_slider_int(max_value=max_val, width=150, tag=self.t(f"s_{label}"), callback=self.on_slider_changed, user_data=label)
-                                        dpg.add_input_int(label='', width=80, tag=self.t(f"i_{label}"), callback=self.on_slider_changed, user_data=label, step=0)       
+                                        dpg.add_slider_int(max_value=max_val, width=135, tag=self.t(f"s_{label}"),callback = self.on_slider_changed, user_data=label)
+                                        dpg.add_input_int(label='', width=33, tag=self.t(f"i_{label}"),callback = self.on_slider_changed, user_data=label, step=0)
+                                        dpg.add_button(width = 50, label="Set",tag = self.t(f"set_{label}"), callback=self.on_slider_changed, user_data=label)
+       
                             dpg.add_separator()
                             dpg.add_text("Stream decimation")
                             dpg.add_input_int(label="", width=200, default_value=10, min_value=1, max_value=65535, tag=self.t("stream_decimation_input"), callback=self.set_stream_decimation)
                             dpg.add_text("Sample rate (10-250 Hz)")
                             dpg.add_input_int(label="", width=200, default_value=100, min_value=10, max_value=250, tag=self.t("sample_rate_input"), callback=self.set_sample_rate)
-                            dpg.add_spacer(height=10)
                             dpg.add_separator()
-                            dpg.add_text("LIVE")
-                            dpg.add_button(label="OFF", tag=self.t("live_button"), callback=self.live_plot_toggle)
-                            dpg.add_spacer(height=10)
+                            with dpg.group(horizontal= True):
+                                dpg.add_text("LIVE")
+                                dpg.add_button(label="OFF", tag=self.t("live_button"), callback=self.live_plot_toggle)
+                            dpg.add_separator()
+                            with dpg.group(tag=self.t("event_legend"), show=True):
+                                dpg.add_text("Event legend")
+                                with dpg.group(horizontal=True):
+                                    dpg.add_text("[BLUE]", color=EVENT_COLORS["live"])
+                                    dpg.add_text("Live on/off")
+                                with dpg.group(horizontal=True):
+                                    dpg.add_text("[GREEN]", color=EVENT_COLORS["record"])
+                                    dpg.add_text("Record start/stop")
+                                with dpg.group(horizontal=True):
+                                    dpg.add_text("[ORANGE]", color=EVENT_COLORS["control"])
+                                    dpg.add_text("Gain / LED changes")
+                                with dpg.group(horizontal=True):
+                                    dpg.add_text("[PURPLE]", color=EVENT_COLORS["stream"])
+                                    dpg.add_text("Stream / sample rate")
+                                with dpg.group(horizontal=True):
+                                    dpg.add_text("[PINK]", color=EVENT_COLORS["uv"])
+                                    dpg.add_text("UV segment changes")
 
                         #One tab here which has all these automation controls
                         with dpg.tab(label="Recording", tag=self.t('recording_options')):
                             dpg.add_spacer(height=10)
                             dpg.add_text("Start Recording: ")
                             dpg.add_separator()
-                            dpg.add_input_float(label="", width=200, default_value=300.0, min_value=1.0, max_value=3600.0, callback=self.update_recording_duration)
+                            dpg.add_input_float(label="", width=200, default_value=30, min_value=1.0, max_value=3600.0, callback=self.update_recording_duration)
                             dpg.add_text("Recording Duration (s)")
                             dpg.add_spacer(height=10)
                             dpg.add_separator()
@@ -167,23 +184,6 @@ class DeviceTab:
                             dpg.add_text("", tag=self.t("filename"))
                             dpg.add_separator()
                             dpg.add_button(label="START", tag=self.t("start_button"), callback=self.start_recording)
-                            with dpg.group(tag=self.t("event_legend"), show=True):
-                                dpg.add_text("Event legend")
-                                with dpg.group(horizontal=True):
-                                    dpg.add_text("●", color=EVENT_COLORS["live"])
-                                    dpg.add_text("Live on/off")
-                                with dpg.group(horizontal=True):
-                                    dpg.add_text("●", color=EVENT_COLORS["record"])
-                                    dpg.add_text("Record start/stop")
-                                with dpg.group(horizontal=True):
-                                    dpg.add_text("●", color=EVENT_COLORS["control"])
-                                    dpg.add_text("Gain / LED changes")
-                                with dpg.group(horizontal=True):
-                                    dpg.add_text("●", color=EVENT_COLORS["stream"])
-                                    dpg.add_text("Stream / sample rate")
-                                with dpg.group(horizontal=True):
-                                    dpg.add_text("●", color=EVENT_COLORS["uv"])
-                                    dpg.add_text("UV segment changes")
 
                 with dpg.child_window(width=-1, height=-65, tag=self.t("plot_panel"), show=True):
                     dpg.configure_item(self.t("plot_panel"), show=True)
@@ -192,6 +192,13 @@ class DeviceTab:
                         dpg.add_combo(label="Select Bottom Right Channel", width=300, items=["CH3 (VIS Current)", "CH4 (IR Current)"], default_value="CH3 (VIS Current)", callback=self.toggle_plots, tag=self.t("bottom_right_combo"))
                     with dpg.group(tag=self.t("plot_area"), show=True):
                         with dpg.group(tag=self.t("plot_staging"), show=True):
+    
+                            # Create the blue theme once before the loop
+                            with dpg.theme(tag=self.t("blue_line_theme")):
+                                with dpg.theme_component(dpg.mvLineSeries):
+                                    # Using the same RGBA blue fro dictionary
+                                    dpg.add_theme_color(dpg.mvPlotCol_Line, (0, 102, 204, 255), category=dpg.mvThemeCat_Plots)
+
                             for i in range(4):
                                 ch = CH_TAGS[i]
                                 with dpg.group(tag=self.t(f"wrap_{ch}"), show=True):
@@ -199,7 +206,13 @@ class DeviceTab:
                                         dpg.add_plot_legend()
                                         dpg.add_plot_axis(dpg.mvXAxis, label="time (s)", tag=self.t(f"{ch}_x_axis"))
                                         with dpg.plot_axis(dpg.mvYAxis, label="Volts", tag=self.t(f"{ch}_y_axis")):
-                                            dpg.add_line_series([], [], label=CH_NAMES[i], tag=self.t(f"{ch}_series"))
+                                            
+                                            #add the line series
+                                            series_tag = self.t(f"{ch}_series")
+                                            dpg.add_line_series([], [], label=CH_NAMES[i], tag=series_tag)
+                        
+                                            #Bind the blue theme to the series we just created
+                                            dpg.bind_item_theme(series_tag, self.t("blue_line_theme"))
                         with dpg.group(tag=self.t("plot_container"), show=True):
                             pass
 
@@ -241,7 +254,7 @@ class DeviceTab:
         availablePortsStrings = self.daq.get_available_ports()
         if availablePortsStrings:
             for port in availablePortsStrings:
-                dpg.add_button(label=port, parent=self.t('com_port_group'), user_data=port, callback=self.connect_port)
+                dpg.add_button(label=port, parent=self.t('com_port_group'), user_data=port, callback=self.connect_port,tag =self.t(f"connect_{port}"))
         else:
             dpg.add_text('No COM Ports detected', parent=self.t('com_port_group'))
 
@@ -250,15 +263,24 @@ class DeviceTab:
 
     def connect_port(self, sender, app_data, user_data):
         self.daq.connect(user_data)
-        dpg.add_text("Connected!", parent=self.t('com_port_group'))
+        dpg.configure_item(self.t(f"connect_{user_data}"), label=f"{user_data} (Connected)")
 
     # Slider Control
    
     def on_slider_changed(self, sender, app_data, user_data):
-        dpg.set_value(self.t(f"s_{user_data}"), app_data)
-        dpg.set_value(self.t(f"i_{user_data}"), app_data)
-        self.slider_cmds[user_data][1](app_data)
-        self.record_event(f"{user_data}={app_data}", value=app_data, event_type="control")
+        '''
+        Function used when a slider is changed, or input, and when we set, it's called for all 3.
+        If we have not clicked set yet, it only updates the value for both, 
+        and if we click set,it actually sends the command!
+        '''
+         #***VERIFY THAT THIS SETUP WORKS!
+        if sender == self.t(f"s_{user_data}") or sender == self.t(f"i_{user_data}"):
+            dpg.set_value(self.t(f"s_{user_data}"), app_data)
+            dpg.set_value(self.t(f"i_{user_data}"), app_data)
+        else:
+            slider_value = dpg.get_value(self.t(f"s_{user_data}")) 
+            self.slider_cmds[user_data][1](slider_value)
+            self.record_event(f"{user_data}={slider_value}", value=slider_value, event_type="control")
 
     # Plotting
     def update_plot_window_s(self, sender, app_data, user_data):
