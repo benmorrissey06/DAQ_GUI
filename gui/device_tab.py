@@ -122,9 +122,13 @@ class DeviceTab:
        
                             dpg.add_separator()
                             dpg.add_text("Stream decimation")
-                            dpg.add_input_int(label="", width=200, default_value=10, min_value=1, max_value=65535, tag=self.t("stream_decimation_input"), callback=self.set_stream_decimation)
+                            with dpg.group(horizontal=True):
+                                dpg.add_input_int(label="", width=200, default_value=10, min_value=1, max_value=65535, tag=self.t("stream_decimation_input"), callback=self.set_stream_decimation)
+                                dpg.add_button(label="Set", callback=self.set_stream_decimation, user_data=None, tag=self.t("set_stream_decimation_button"))
                             dpg.add_text("Sample rate (10-250 Hz)")
-                            dpg.add_input_int(label="", width=200, default_value=100, min_value=10, max_value=250, tag=self.t("sample_rate_input"), callback=self.set_sample_rate)
+                            with dpg.group(horizontal=True):
+                                dpg.add_input_int(label="", width=200, default_value=100, min_value=10, max_value=250, tag=self.t("sample_rate_input"), callback=self.set_sample_rate)
+                                dpg.add_button(label="Set", callback=self.set_sample_rate, user_data=None,tag=self.t("set_sample_rate_button"))
                             dpg.add_separator()
                             with dpg.group(horizontal= True):
                                 dpg.add_text("LIVE")
@@ -154,7 +158,7 @@ class DeviceTab:
                             dpg.add_spacer(height=10)
                             dpg.add_text("Start Recording: ")
                             dpg.add_separator()
-                            dpg.add_input_float(label="", width=200, default_value=30, min_value=1.0, max_value=3600.0, callback=self.update_recording_duration)
+                            dpg.add_input_float(label="", width=200, default_value=30, min_value=1.0, max_value=3600.0, callback=self.update_recording_duration,tag=self.t("recording_duration_input"))
                             dpg.add_text("Recording Duration (s)")
                             dpg.add_spacer(height=10)
                             dpg.add_separator()
@@ -517,7 +521,7 @@ class DeviceTab:
             dpg.add_separator()
             dpg.add_input_int(label="Start (s)", width=100, step=0, tag=self.t(f"start_{sc}"))
             dpg.add_input_int(label="End (s)", width=100, step=0, tag=self.t(f"end_{sc}"))
-            dpg.add_input_int(label="UV Val", width=100, step=0, tag=self.t(f"uv_{sc}"))
+            dpg.add_input_int(label="VIS DAC Value", width=100, step=0, tag=self.t(f"uv_{sc}"))
         
         
             dpg.add_button(label=" X ", user_data=row_tag, callback=self.delete_segment)
@@ -537,7 +541,7 @@ class DeviceTab:
         self.light_values.clear()
 
         self.check_overlaps()
-
+        self.recording_duration = dpg.get_value(self.t("recording_duration_input"))
         for row_tag, sc in self.active_rows:
             start_val = dpg.get_value(self.t(f"start_{sc}"))
             end_val = dpg.get_value(self.t(f"end_{sc}"))
@@ -631,14 +635,18 @@ class DeviceTab:
             self.wait_for_input = app_data
 
     def set_stream_decimation(self, sender, app_data, user_data):
-        value = max(1, int(app_data))
-        self.daq.set_adc_stream_decimation(value)
-        self.record_event("STREAM_DECIMATION", value=value, event_type="stream")
+        if sender == self.t('set_stream_decimation_button'):
+            value = dpg.get_value(self.t("stream_decimation_input"))
+            value = max(1, int(value))
+            self.daq.set_adc_stream_decimation(value)
+            self.record_event("STREAM_DECIMATION", value=value, event_type="stream")
 
     def set_sample_rate(self, sender, app_data, user_data):
-        value = max(10, min(250, int(app_data)))
-        self.daq.set_sample_rate(value)
-        self.record_event("SAMPLE_RATE", value=value, event_type="stream")
+        if sender == self.t('set_sample_rate_button'):
+            value = dpg.get_value(self.t("sample_rate_input"))
+            value = max(10, min(250, int(value)))
+            self.daq.set_sample_rate(value)
+            self.record_event("SAMPLE_RATE", value=value, event_type="stream")
  
     # general
 

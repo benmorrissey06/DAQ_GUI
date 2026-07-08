@@ -51,14 +51,21 @@ class MasterTab:
                     dpg.add_separator()
                     dpg.add_spacer(height=10)
                     for label, (max_val, _) in SLIDER_DEFS.items():
+                        dpg.add_text(label)
                         with dpg.group(horizontal=True):
                             dpg.add_slider_int(max_value=max_val, width=150, tag=self.t(f"s_{label}"), callback=self.on_slider_changed, user_data=label)
-                            dpg.add_input_int(label=label, width=80, tag=self.t(f"i_{label}"), callback=self.on_slider_changed, user_data=label, step=0)
+                            dpg.add_input_int(label='', width=80, tag=self.t(f"i_{label}"), callback=self.on_slider_changed, user_data=label, step=0)
+                            dpg.add_button(label="Set", callback=self.on_slider_changed, user_data=label,tag=self.t(f"set_{label}_button"))
                     dpg.add_spacer(height=10)
                     dpg.add_separator()
-                    dpg.add_text("Streaming")
-                    dpg.add_input_int(label="Stream decimation", width=200, default_value=10, min_value=1, max_value=65535, tag=self.t("stream_decimation_input"), callback=self.set_stream_decimation)
-                    dpg.add_input_int(label="Sample rate (10-250 Hz)", width=200, default_value=100, min_value=10, max_value=250, tag=self.t("sample_rate_input"), callback=self.set_sample_rate)
+                    dpg.add_text("Stream decimation")
+                    with dpg.group(horizontal=True):
+                        dpg.add_input_int(label="", width=200, default_value=10, min_value=1, max_value=65535, tag=self.t("stream_decimation_input"), callback=self.set_stream_decimation)
+                        dpg.add_button(label="Set", callback=self.set_stream_decimation, user_data=None, tag=self.t("set_stream_decimation_button"))
+                    dpg.add_text("Sample rate (10-250 Hz)")
+                    with dpg.group(horizontal=True):
+                        dpg.add_input_int(label="", width=200, default_value=100, min_value=10, max_value=250, tag=self.t("sample_rate_input"), callback=self.set_sample_rate)
+                        dpg.add_button(label="Set", callback=self.set_sample_rate, user_data=None, tag=self.t("set_sample_rate_button"))
                     dpg.add_spacer(height=10)
                     dpg.add_separator()
                     dpg.add_text("LIVE")
