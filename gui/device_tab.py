@@ -82,6 +82,9 @@ class DeviceTab:
         threading.Thread(target=self.hardware_thread, daemon=True).start()
 
     def t(self, name):
+        '''
+        Super useful function to generate unique tags for each tab, so we can control each device independently
+        '''
         return f"{name}_{self.tid}"
 
     def build_ui(self):
