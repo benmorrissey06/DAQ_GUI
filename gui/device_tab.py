@@ -385,9 +385,7 @@ class DeviceTab(Toolbox):
         if not self.daq.is_open:
             return
         self.daq.clear_vis_schedule()
-        for i in range(len(self.time_stamps)):
-            start_s, end_s = self.time_stamps[i]
-            uv_val = self.light_values[i]
+        for (start_s, end_s), uv_val in sorted(zip(self.time_stamps, self.light_values)):
             self.daq.append_schedule_step(start_s, uv_val)
             self.daq.append_schedule_step(end_s, 0)
             self.record_event("UV", value=uv_val, event_type="uv", host_time=self.start_time + start_s)
