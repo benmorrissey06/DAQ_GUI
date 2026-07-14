@@ -116,7 +116,7 @@ class DeviceTab(Toolbox):
                                     with dpg.plot(label=CH_NAMES[i], height=300, width=-1, tag=self.t(f"plot_{ch}")):
                                         dpg.add_plot_legend()
                                         dpg.add_plot_axis(dpg.mvXAxis, label="time (s)", tag=self.t(f"{ch}_x_axis"))
-                                        with dpg.plot_axis(dpg.mvYAxis, label="Volts", tag=self.t(f"{ch}_y_axis")):
+                                        with dpg.plot_axis(dpg.mvYAxis, label="Volts" if i < 2 else "Raw ADC Counts", tag=self.t(f"{ch}_y_axis")):
                                             
                                             #add the line series
                                             series_tag = self.t(f"{ch}_series")
@@ -241,7 +241,7 @@ class DeviceTab(Toolbox):
             return
 
         sample_counter, high, low, difference, volts = parsed
-        self.update_plots(volts, time.time())
+        self.update_plots(volts + high[2:], time.time())
 
         if self.is_recording:
             self.recorder.write_row(sample_counter, high, low, difference)

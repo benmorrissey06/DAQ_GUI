@@ -101,13 +101,15 @@ View events in the saved CSV and live on the graph
 ```text
 TO DO:
 
+MOST IMPORTANT: IR LED INTENSITY
+
+Polish this very readme to be more organized and clear
+
 if multiple events occur at once, there is no system in place right now.
 
-Make schedule events greater than duration trigger an error,similar to overlap.
-
-volts for current sense are inaccurate
-
 Make it so that resizing plots does not erase previous data
+
+ensure everything is safe if device unexpectedly disconnects
 
 Make graph resume where you left off when you stop via Live button***
 

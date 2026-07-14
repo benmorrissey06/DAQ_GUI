@@ -35,6 +35,7 @@ class Toolbox:
         self.segment_counter = 1
         #Whether or not there is an overlap in the segments, will be function to determine
         self.no_overlap = True
+        self.schedule_error = ""
 
     def t(self, name):
         '''
@@ -294,9 +295,9 @@ class Toolbox:
         self.time_stamps.clear()
         self.light_values.clear()
 
-        self.check_overlaps()
         if self.compact:
             self.recording_duration = dpg.get_value(self.t("recording_duration_input"))
+        self.check_overlaps()
         for row_tag, sc in self.active_rows:
             start_val = dpg.get_value(self.t(f"start_{sc}"))
             end_val = dpg.get_value(self.t(f"end_{sc}"))
@@ -312,7 +313,7 @@ class Toolbox:
                     parent=self.t("Confirm info")
                 )
         else:
-            dpg.add_text("Error - overlapping time segments", parent=self.t("Confirm info"))
+            dpg.add_text(self.schedule_error or "Error - overlapping time segments", parent=self.t("Confirm info"))
 
     def check_overlaps(self):
         '''
@@ -320,11 +321,16 @@ class Toolbox:
         if they enter overlapping segments
         '''
         intervals = []
+        self.schedule_error = ""
         for row_tag, sc in self.active_rows:
             start_val = dpg.get_value(self.t(f"start_{sc}"))
             end_val = dpg.get_value(self.t(f"end_{sc}"))
             if start_val is None or end_val is None:
                 self.no_overlap = False
+                return False
+            if max(start_val, end_val) > self.recording_duration:
+                self.no_overlap = False
+                self.schedule_error = "Error - time segment extends beyond recording duration"
                 return False
             intervals.append((min(start_val, end_val), max(start_val, end_val)))
         intervals.sort(key=lambda x: x[0])

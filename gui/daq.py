@@ -96,7 +96,7 @@ class DAQController:
             return None
 
         difference = tuple(h - l for h, l in zip(high, low))
-        volts = tuple((r / 32768.0) * 5.0 for r in high)
+        volts = tuple((r / 32768.0) * 5.0 for r in high[:2])
         return sample_counter, high, low, difference, volts
 
     def handle_stream_line(self, line):
