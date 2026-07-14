@@ -89,6 +89,8 @@ View events in the saved CSV and live on the graph
 ```text
 TO DO:
 
+if you do something before connecting, maybe have a message?
+
 Make master start all toggle to stop all like in device_tab
 
 Make Start All from Master show as green event in individual
@@ -115,10 +117,6 @@ Make graph resume where you left off when you stop via Live button***
 X button for tabs
 
 Make buttons on master toggle on ones in individual device
-
-Make master set buttons functional
-
-Make the light value entered in a time segment functional, currently that is only frontend
 
 Verify what settings should be in the json? segments too?
 

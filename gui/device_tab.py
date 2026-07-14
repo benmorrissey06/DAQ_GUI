@@ -337,9 +337,8 @@ class DeviceTab(Toolbox):
         self.is_recording = not getattr(self, 'is_recording', False)
         if self.is_recording:
             self.start_time = time.time()
-            self.record_event("RECORDING_START", event_type="record")
         else:
-            self.record_event("RECORDING_STOP", event_type="record")
+            self.record_event("RECORDING_STOP", event_type="record", write_to_csv=False)
         label = "STOP" if self.is_recording else "START"
         try:
             dpg.configure_item(self.t('start_button'), label=label)
@@ -356,7 +355,9 @@ class DeviceTab(Toolbox):
                     dpg.add_text(f"Error: Cannot create file - {e}", parent=self.t("Confirm info"))
                     self.is_recording = False
                     dpg.configure_item(self.t('start_button'), label='START')
+                    self.app.master.update_recording_state()
                     return
+                self.record_event("RECORDING_START", event_type="record", write_to_csv=False)
                 #capture current settings for json file
                 self.recorder.write_metadata_sidecar({
                     "date": self.date,
@@ -380,6 +381,7 @@ class DeviceTab(Toolbox):
         else:
             self.daq.stop_vis_schedule()
             self.recorder.close_csv()
+        self.app.master.update_recording_state()
 
     def upload_schedule_to_daq(self):
         if not self.daq.is_open:
@@ -416,7 +418,9 @@ class DeviceTab(Toolbox):
             time.sleep(0.01)
 
     def stop_recording_automatically(self):
+        self.record_event("RECORDING_STOP", event_type="record", write_to_csv=False)
         self.is_recording = False
         self.daq.stop_vis_schedule()
         self.recorder.close_csv()
         dpg.configure_item(self.t('start_button'), label='START')
+        self.app.master.update_recording_state()

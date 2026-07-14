@@ -47,8 +47,10 @@ class MasterTab(Toolbox):
         dpg.configure_item(self.t("live_button"), label=label)
         for tab in self.app.device_tabs:
             if tab.daq.is_open:
-                tab.is_live = self.is_live
                 dpg.configure_item(tab.t("live_button"), label=label)
+                if tab.is_live == self.is_live:
+                    continue
+                tab.is_live = self.is_live
                 if self.is_live:
                     tab.daq.set_adc_streaming(True)
                     tab.daq.set_adc_stream_decimation(int(dpg.get_value(self.t("stream_decimation_input"))))
@@ -60,7 +62,15 @@ class MasterTab(Toolbox):
                     tab.daq.stop_device()
                     tab.record_event("MASTER_LIVE_OFF", value=0, event_type="live")
 
+    def update_recording_state(self):
+        active = [f"Device {tab.tid}" for tab in self.app.device_tabs if tab.is_recording]
+        dpg.configure_item(self.t("start_all_button"), label="STOP ALL" if active else "START ALL")
+        dpg.set_value(self.t("recording_status"), f"Recording: {', '.join(active)}. Stop all before starting again." if active else "")
+
     def start_all(self, sender, app_data, user_data):
+        if any(tab.is_recording for tab in self.app.device_tabs):
+            self.stop_all(sender, app_data, user_data)
+            return
         self.prepare_recording()
         if not self.no_overlap:
             return
@@ -79,6 +89,7 @@ class MasterTab(Toolbox):
             dpg.configure_item(tab.t('start_button'), label='STOP')
             try:
                 tab.recorder.open_csv()
+                tab.record_event("RECORDING_START", event_type="record", write_to_csv=False)
                 tab.recorder.write_metadata_sidecar({
                     "date": tab.date,
                     "cohort": self.cohort or "",
@@ -95,11 +106,14 @@ class MasterTab(Toolbox):
             except OSError:
                 tab.is_recording = False
                 dpg.configure_item(tab.t('start_button'), label='START')
+        self.update_recording_state()
 
     def stop_all(self, sender, app_data, user_data):
         for tab in self.app.device_tabs:
             if tab.is_recording:
+                tab.record_event("RECORDING_STOP", event_type="record", write_to_csv=False)
                 tab.is_recording = False
                 tab.daq.stop_vis_schedule()
                 tab.recorder.close_csv()
                 dpg.configure_item(tab.t('start_button'), label='START')
+        self.update_recording_state()

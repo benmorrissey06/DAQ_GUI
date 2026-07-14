@@ -144,9 +144,8 @@ class Toolbox:
             dpg.add_button(label="START", tag=self.t("start_button"), callback=self.start_recording)
         else:
             dpg.add_separator()
-            with dpg.group(horizontal=True):
-                dpg.add_button(label="START ALL", callback=self.start_all)
-                dpg.add_button(label="STOP ALL", callback=self.stop_all)
+            dpg.add_button(label="START ALL", tag=self.t("start_all_button"), callback=self.start_all)
+            dpg.add_text("", tag=self.t("recording_status"))
 
     # Slider Control
    
