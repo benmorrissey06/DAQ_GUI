@@ -1,5 +1,10 @@
 import dearpygui.dearpygui as dpg
 from tkinter import Tk, filedialog
+'''
+functions were being repeated in both the master and device tabs, so I made this shared class for efficiency
+you can draw_general_ctrls and draw_recording_ctrls, and it will handle both the master and device tabs, depending on the compact parameter in the function
+a lot of the most useful stuff is in here, outside of plotting
+'''
 
 VIS_PD_MAX = 255
 IR_PD_MAX = 255
