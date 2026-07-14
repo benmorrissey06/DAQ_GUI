@@ -162,6 +162,7 @@ class DeviceTab(Toolbox):
     def connect_port(self, sender, app_data, user_data):
         self.daq.connect(user_data)
         dpg.configure_item(self.t(f"connect_{user_data}"), label=f"{user_data} (Connected)")
+        self.update_general_status()
 
     # Plotting
     def update_plot_window_s(self, sender, app_data, user_data):
@@ -300,6 +301,9 @@ class DeviceTab(Toolbox):
         '''
         Turn streaming on or off
         '''
+        if not self.daq.is_open:
+            self.update_general_status()
+            return
         self.is_live = not self.is_live
         label = "ON" if self.is_live else "OFF"
         dpg.configure_item(self.t("live_button"), label=label)
@@ -324,6 +328,14 @@ class DeviceTab(Toolbox):
 
        settings to the recording are retrieved from input fields via dpg.get_value
         '''
+        if not self.is_recording:
+            if not self.daq.is_open:
+                self.update_general_status()
+                return
+            if not self.is_live:
+                self.set_recording_warning(["Device not live."])
+                return
+            self.set_recording_warning([])
         name = dpg.get_value(self.t("filename"))
         
         if not name:

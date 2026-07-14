@@ -101,7 +101,7 @@ View events in the saved CSV and live on the graph
 ```text
 TO DO:
 
-if you do something before connecting, maybe have a message?
+if multiple events occur at once, there is no system in place right now.
 
 Make schedule events greater than duration trigger an error,similar to overlap.
 

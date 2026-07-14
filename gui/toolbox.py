@@ -58,9 +58,6 @@ class Toolbox:
                     dpg.add_slider_int(max_value=max_val, width=150, tag=self.t(f"s_{label}"), callback=self.on_slider_changed, user_data=label)
                     dpg.add_input_int(label='', width=80, tag=self.t(f"i_{label}"), callback=self.on_slider_changed, user_data=label, step=0)
                     dpg.add_button(label="Set", callback=self.on_slider_changed, user_data=label,tag=self.t(f"set_{label}_button"))
-        if not compact:
-            dpg.add_spacer(height=10)
-        dpg.add_text("VIS LED controls locked during recording", tag=self.t("vis_led_locked"), show=False)
         dpg.add_separator()
         dpg.add_text("Stream decimation")
         with dpg.group(horizontal=True):
@@ -75,7 +72,8 @@ class Toolbox:
             with dpg.group(horizontal= True):
                 dpg.add_text("LIVE")
                 dpg.add_button(label="OFF", tag=self.t("live_button"), callback=self.live_plot_toggle)
-            dpg.add_separator()
+            with dpg.group(tag=self.t("general_status"), show=False):
+                pass
             with dpg.group(tag=self.t("event_legend"), show=True):
                 dpg.add_checkbox(label ="Show Event Color Key",default_value = False,callback=self.toggle_event_legend)
                 with dpg.group(horizontal=False,tag = self.t("event_legend_group"), show=False):
@@ -99,7 +97,10 @@ class Toolbox:
             dpg.add_separator()
             dpg.add_text("LIVE")
             dpg.add_button(label="OFF", tag=self.t("live_button"), callback=self.live_toggle_all)
+            with dpg.group(tag=self.t("general_status"), show=False):
+                pass
             dpg.add_spacer(height=10)
+        self.update_general_status()
 
     def draw_recording_ctrls(self, compact):
         dpg.add_spacer(height=10)
@@ -143,16 +144,51 @@ class Toolbox:
             dpg.add_text("", tag=self.t("filename"))
             dpg.add_separator()
             dpg.add_button(label="START", tag=self.t("start_button"), callback=self.start_recording)
+            dpg.add_text("", tag=self.t("recording_warning"), show=False)
         else:
             dpg.add_separator()
             dpg.add_button(label="START ALL", tag=self.t("start_all_button"), callback=self.start_all)
             dpg.add_text("", tag=self.t("recording_status"))
+            with dpg.group(tag=self.t("recording_warning"), show=False):
+                pass
 
-    def set_vis_led_controls_locked(self, locked):
-        for tag in (self.t("s_VIS LED Gain"), self.t("i_VIS LED Gain"), self.t("set_VIS LED Gain"), self.t("set_VIS LED Gain_button")):
+    def set_manual_controls_locked(self, locked):
+        for label in (DEVICE_SLIDER_DEFS if self.compact else SLIDER_DEFS):
+            for tag in (self.t(f"s_{label}"), self.t(f"i_{label}"), self.t(f"set_{label}"), self.t(f"set_{label}_button")):
+                if dpg.does_item_exist(tag):
+                    dpg.configure_item(tag, enabled=not locked)
+        for tag in (self.t("stream_decimation_input"), self.t("set_stream_decimation_button"), self.t("sample_rate_input"), self.t("set_sample_rate_button")):
             if dpg.does_item_exist(tag):
                 dpg.configure_item(tag, enabled=not locked)
-        dpg.configure_item(self.t("vis_led_locked"), show=locked)
+        self.manual_controls_locked = locked
+        self.update_general_status()
+
+    def update_general_status(self):
+        messages = (["MANUAL CONTROLS LOCKED DURING RECORDING"] if getattr(self, "manual_controls_locked", False) else []) + (["Device not connected."] if self.compact and not self.daq.is_open else []) + ([self.general_message] if getattr(self, "general_message", "") else [])
+        dpg.delete_item(self.t("general_status"), children_only=True)
+        for i, message in enumerate(messages):
+            dpg.add_separator(parent=self.t("general_status"))
+            dpg.add_text(message, parent=self.t("general_status"))
+        if messages:
+            dpg.add_separator(parent=self.t("general_status"))
+        dpg.configure_item(self.t("general_status"), show=bool(messages))
+
+    def set_general_message(self, message):
+        self.general_message = message
+        self.update_general_status()
+
+    def set_recording_warning(self, messages):
+        if self.compact:
+            dpg.set_value(self.t("recording_warning"), messages[0] if messages else "")
+            dpg.configure_item(self.t("recording_warning"), show=bool(messages))
+            return
+        dpg.delete_item(self.t("recording_warning"), children_only=True)
+        for message in messages:
+            dpg.add_separator(parent=self.t("recording_warning"))
+            dpg.add_text(message, parent=self.t("recording_warning"))
+        if messages:
+            dpg.add_separator(parent=self.t("recording_warning"))
+        dpg.configure_item(self.t("recording_warning"), show=bool(messages))
 
     # Slider Control
    
@@ -170,9 +206,16 @@ class Toolbox:
             slider_value = dpg.get_value(self.t(f"s_{user_data}")) 
             method_name = (DEVICE_SLIDER_DEFS if self.compact else SLIDER_DEFS)[user_data][1]
             if self.compact:
+                if not self.daq.is_open:
+                    self.update_general_status()
+                    return
                 getattr(self.daq, method_name)(slider_value)
                 self.record_event(f"{user_data}={slider_value}", value=slider_value, event_type="control")
             else:
+                if not any(tab.daq.is_open for tab in self.app.device_tabs):
+                    self.set_general_message("No device tabs available." if not self.app.device_tabs else "No connected devices.")
+                    return
+                self.set_general_message("")
                 for tab in self.app.device_tabs:
                     if tab.daq.is_open:
                         getattr(tab.daq, method_name)(slider_value)
@@ -183,9 +226,16 @@ class Toolbox:
             value = dpg.get_value(self.t("stream_decimation_input"))
             value = max(1, int(value))
             if self.compact:
+                if not self.daq.is_open:
+                    self.update_general_status()
+                    return
                 self.daq.set_adc_stream_decimation(value)
                 self.record_event("STREAM_DECIMATION", value=value, event_type="stream")
             else:
+                if not any(tab.daq.is_open for tab in self.app.device_tabs):
+                    self.set_general_message("No device tabs available." if not self.app.device_tabs else "No connected devices.")
+                    return
+                self.set_general_message("")
                 for tab in self.app.device_tabs:
                     if tab.daq.is_open:
                         tab.daq.set_adc_stream_decimation(value)
@@ -196,9 +246,16 @@ class Toolbox:
             value = dpg.get_value(self.t("sample_rate_input"))
             value = max(10, min(250, int(value)))
             if self.compact:
+                if not self.daq.is_open:
+                    self.update_general_status()
+                    return
                 self.daq.set_sample_rate(value)
                 self.record_event("SAMPLE_RATE", value=value, event_type="stream")
             else:
+                if not any(tab.daq.is_open for tab in self.app.device_tabs):
+                    self.set_general_message("No device tabs available." if not self.app.device_tabs else "No connected devices.")
+                    return
+                self.set_general_message("")
                 for tab in self.app.device_tabs:
                     if tab.daq.is_open:
                         tab.daq.set_sample_rate(value)

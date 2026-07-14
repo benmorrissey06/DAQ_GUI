@@ -42,6 +42,10 @@ class MasterTab(Toolbox):
             self.test_label = app_data
 
     def live_toggle_all(self, sender, app_data, user_data):
+        if not any(tab.daq.is_open for tab in self.app.device_tabs):
+            self.set_general_message("No device tabs available." if not self.app.device_tabs else "No connected devices.")
+            return
+        self.set_general_message("")
         self.is_live = not self.is_live
         label = "ON" if self.is_live else "OFF"
         dpg.configure_item(self.t("live_button"), label=label)
@@ -66,20 +70,32 @@ class MasterTab(Toolbox):
         active = [f"Device {tab.tid}" for tab in self.app.device_tabs if tab.is_recording]
         dpg.configure_item(self.t("start_all_button"), label="STOP ALL" if active else "START ALL")
         dpg.set_value(self.t("recording_status"), f"Recording: {', '.join(active)}. Stop all before starting again." if active else "")
-        self.set_vis_led_controls_locked(bool(active))
+        self.set_manual_controls_locked(bool(active))
         for tab in self.app.device_tabs:
-            tab.set_vis_led_controls_locked(tab.is_recording)
+            tab.set_manual_controls_locked(tab.is_recording)
 
     def start_all(self, sender, app_data, user_data):
         if any(tab.is_recording for tab in self.app.device_tabs):
             self.stop_all(sender, app_data, user_data)
             return
+        warnings = []
+        ready = []
+        for tab in self.app.device_tabs:
+            if not tab.daq.is_open:
+                warnings.append(f"Device {tab.tid} not connected.")
+            elif not tab.is_live:
+                warnings.append(f"Device {tab.tid} not live.")
+            else:
+                ready.append(tab)
+        if not self.app.device_tabs:
+            warnings.append("No device tabs available.")
+        self.set_recording_warning(warnings)
+        if not ready:
+            return
         self.prepare_recording()
         if not self.no_overlap:
             return
-        for tab in self.app.device_tabs:
-            if not tab.daq.is_open or tab.is_recording:
-                continue
+        for tab in ready:
             name = dpg.get_value(tab.t("filename"))
             if not name or not tab.recorder.save_directory:
                 continue

@@ -37,5 +37,9 @@ class MainGUI:
     def run(self):
         dpg.set_primary_window("main window", True)
         dpg.show_viewport()
-        dpg.start_dearpygui()
-        dpg.destroy_context()
+        try:
+            dpg.start_dearpygui()
+        finally:
+            for tab in self.device_tabs:
+                tab.daq.turn_off()
+            dpg.destroy_context()
