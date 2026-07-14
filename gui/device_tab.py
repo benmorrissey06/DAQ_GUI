@@ -210,6 +210,8 @@ class DeviceTab(Toolbox):
         '''
         update the plots as data comes in
         '''
+        #for now volts is a list of 4 values one for each channel,
+        #and the last two are not actually converted to volts as idk the conversion
         if self.t0 is None:
             self.t0 = host_time
 
@@ -248,7 +250,7 @@ class DeviceTab(Toolbox):
             return
 
         sample_counter, high, low, difference, volts = parsed
-        self.update_plots(volts + high[2:], time.time())
+        self.update_plots(volts + high[2:], time.time())#high[2:] is for channels 3 and 4, and for now, it is raw values NOT volts despite being added to that list. ultimately wed like it to be volts though.
 
         if self.is_recording:
             self.recorder.write_row(sample_counter, high, low, difference)
