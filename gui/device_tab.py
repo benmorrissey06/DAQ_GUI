@@ -236,6 +236,13 @@ class DeviceTab(Toolbox):
         '''
         save data we received from DAQ so we can update plots, also save with write_row from save_recording.py if we are recording
         '''
+        text = line.decode("utf-8", errors="ignore").strip()
+        if text.startswith("SCHED,"):
+            try:
+                self.record_event("VIS LED DAC", value=int(text.split(",")[2]), event_type="uv")
+            except (IndexError, ValueError):
+                pass
+            return
         parsed = self.daq.handle_stream_line(line)
         if parsed is None:
             return
@@ -395,7 +402,6 @@ class DeviceTab(Toolbox):
         self.daq.clear_vis_schedule()
         for time_s, dac_code in self.vis_schedule:
             self.daq.append_schedule_step(time_s, dac_code)
-            self.record_event("UV", value=dac_code, event_type="uv", host_time=self.start_time + time_s)
         self.daq.start_vis_schedule()
 
     def make_vis_schedule(self):

@@ -70,9 +70,6 @@ class MasterTab(Toolbox):
         active = [f"Device {tab.tid}" for tab in self.app.device_tabs if tab.is_recording]
         dpg.configure_item(self.t("start_all_button"), label="STOP ALL" if active else "START ALL")
         dpg.set_value(self.t("recording_status"), f"Recording: {', '.join(active)}. Stop all before starting again." if active else "")
-        self.set_manual_controls_locked(bool(active))
-        for tab in self.app.device_tabs:
-            tab.set_manual_controls_locked(tab.is_recording)
 
     def start_all(self, sender, app_data, user_data):
         if any(tab.is_recording for tab in self.app.device_tabs):

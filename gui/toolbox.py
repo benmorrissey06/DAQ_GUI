@@ -153,19 +153,8 @@ class Toolbox:
             with dpg.group(tag=self.t("recording_warning"), show=False):
                 pass
 
-    def set_manual_controls_locked(self, locked):
-        for label in (DEVICE_SLIDER_DEFS if self.compact else SLIDER_DEFS):
-            for tag in (self.t(f"s_{label}"), self.t(f"i_{label}"), self.t(f"set_{label}"), self.t(f"set_{label}_button")):
-                if dpg.does_item_exist(tag):
-                    dpg.configure_item(tag, enabled=not locked)
-        for tag in (self.t("stream_decimation_input"), self.t("set_stream_decimation_button"), self.t("sample_rate_input"), self.t("set_sample_rate_button")):
-            if dpg.does_item_exist(tag):
-                dpg.configure_item(tag, enabled=not locked)
-        self.manual_controls_locked = locked
-        self.update_general_status()
-
     def update_general_status(self):
-        messages = (["MANUAL CONTROLS LOCKED DURING RECORDING"] if getattr(self, "manual_controls_locked", False) else []) + (["Device not connected."] if self.compact and not self.daq.is_open else []) + ([self.general_message] if getattr(self, "general_message", "") else [])
+        messages = (["Device not connected."] if self.compact and not self.daq.is_open else []) + ([self.general_message] if getattr(self, "general_message", "") else [])
         dpg.delete_item(self.t("general_status"), children_only=True)
         for i, message in enumerate(messages):
             dpg.add_separator(parent=self.t("general_status"))
