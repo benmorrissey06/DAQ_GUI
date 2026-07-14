@@ -85,16 +85,19 @@ class DAQController:
 
     def parse_stream_data_line(self, text):
         parts = text.split(",")
-        if len(parts) < 12:
+        if len(parts) < 12 or parts[2] != "H" or parts[7] != "L":
             return None
 
         try:
-            raw = tuple(int(parts[i]) for i in (3, 4, 5, 6))
+            sample_counter = int(parts[1])
+            high = tuple(int(parts[i]) for i in (3, 4, 5, 6))
+            low = tuple(int(parts[i]) for i in (8, 9, 10, 11))
         except ValueError:
             return None
 
-        volts = tuple((r / 32768.0) * 5.0 for r in raw)
-        return raw, volts
+        difference = tuple(h - l for h, l in zip(high, low))
+        volts = tuple((r / 32768.0) * 5.0 for r in high)
+        return sample_counter, high, low, difference, volts
 
     def handle_stream_line(self, line):
         if not line:

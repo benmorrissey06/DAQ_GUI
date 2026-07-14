@@ -60,6 +60,7 @@ class Toolbox:
                     dpg.add_button(label="Set", callback=self.on_slider_changed, user_data=label,tag=self.t(f"set_{label}_button"))
         if not compact:
             dpg.add_spacer(height=10)
+        dpg.add_text("VIS LED controls locked during recording", tag=self.t("vis_led_locked"), show=False)
         dpg.add_separator()
         dpg.add_text("Stream decimation")
         with dpg.group(horizontal=True):
@@ -146,6 +147,12 @@ class Toolbox:
             dpg.add_separator()
             dpg.add_button(label="START ALL", tag=self.t("start_all_button"), callback=self.start_all)
             dpg.add_text("", tag=self.t("recording_status"))
+
+    def set_vis_led_controls_locked(self, locked):
+        for tag in (self.t("s_VIS LED Gain"), self.t("i_VIS LED Gain"), self.t("set_VIS LED Gain"), self.t("set_VIS LED Gain_button")):
+            if dpg.does_item_exist(tag):
+                dpg.configure_item(tag, enabled=not locked)
+        dpg.configure_item(self.t("vis_led_locked"), show=locked)
 
     # Slider Control
    

@@ -68,6 +68,18 @@ Select which plots you would like to view from the dropdown on the right window 
 
 Switch to master tab to apply settings that affect all devices
 
+## Notes
+
+Master controls will always override individual device controls, unless a recording on an individual device has already been started, in which case the user will be notified that they cannot start all until all devices has been stopped
+
+While starting a recording, manual controls will be locked
+
+While automating a recording, the time segments determine the value of the VIS LED at a given moment, but for any times for which a segment is not defined, the value set for VIS LED before the recording starts will be the default baseline for that recording
+
+## Data format
+
+...
+
 ## Key Features
 
 ```text
@@ -91,38 +103,17 @@ TO DO:
 
 if you do something before connecting, maybe have a message?
 
-Make master start all toggle to stop all like in device_tab
-
-Make Start All from Master show as green event in individual
-
 Make schedule events greater than duration trigger an error,similar to overlap.
 
-Make recording stop also show up as an event
-
-PROPER CSV FORMAT!
-Column	Type	Notes
-host_time	float	time.time() on the PC
-sample_counter	int	Firmware counter; empty on event rows
-high_ch1–high_ch4	int	Raw ADC counts, IR LED on; empty on event rows
-low_ch1–low_ch4	int	Raw ADC counts, IR LED off; empty on event rows
-difference_ch1–difference_ch4	int	high − low; empty on event rows
-event	str	Description; empty on data rows
+volts for current sense are inaccurate
 
 Make it so that resizing plots does not erase previous data
-
-Make overrides between master and individual intentional
 
 Make graph resume where you left off when you stop via Live button***
 
 X button for tabs
 
-Make buttons on master toggle on ones in individual device
-
-Verify what settings should be in the json? segments too?
-
 Adapt to any new firmware changes
-
-Quality of life and safety features
 
 Package in Executable program
 

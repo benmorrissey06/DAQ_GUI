@@ -66,6 +66,9 @@ class MasterTab(Toolbox):
         active = [f"Device {tab.tid}" for tab in self.app.device_tabs if tab.is_recording]
         dpg.configure_item(self.t("start_all_button"), label="STOP ALL" if active else "START ALL")
         dpg.set_value(self.t("recording_status"), f"Recording: {', '.join(active)}. Stop all before starting again." if active else "")
+        self.set_vis_led_controls_locked(bool(active))
+        for tab in self.app.device_tabs:
+            tab.set_vis_led_controls_locked(tab.is_recording)
 
     def start_all(self, sender, app_data, user_data):
         if any(tab.is_recording for tab in self.app.device_tabs):
@@ -86,22 +89,13 @@ class MasterTab(Toolbox):
             tab.recording_duration = self.recording_duration
             tab.time_stamps = list(self.time_stamps)
             tab.light_values = list(self.light_values)
+            tab.vis_dac_baseline = dpg.get_value(tab.t("s_VIS LED Gain"))
+            tab.make_vis_schedule()
             dpg.configure_item(tab.t('start_button'), label='STOP')
             try:
                 tab.recorder.open_csv()
                 tab.record_event("RECORDING_START", event_type="record", write_to_csv=False)
-                tab.recorder.write_metadata_sidecar({
-                    "date": tab.date,
-                    "cohort": self.cohort or "",
-                    "animal_id": tab.animal_id or "",
-                    "test_label": self.test_label or "",
-                    "recording_duration": self.recording_duration,
-                    "sample_rate": dpg.get_value(self.t("sample_rate_input")),
-                    "decimation": dpg.get_value(self.t("stream_decimation_input")),
-                    "vis_pd_gain": dpg.get_value(self.t("s_VIS PD Gain")),
-                    "ir_pd_gain": dpg.get_value(self.t("s_IR PD Gain")),
-                    "vis_led_dac": dpg.get_value(self.t("s_VIS LED Gain")),
-                })
+                tab.recorder.write_metadata_sidecar(tab.recording_metadata(dpg.get_value(self.t("sample_rate_input")), dpg.get_value(self.t("stream_decimation_input")), dpg.get_value(self.t("s_VIS PD Gain")), dpg.get_value(self.t("s_IR PD Gain"))))
                 tab.upload_schedule_to_daq()
             except OSError:
                 tab.is_recording = False
@@ -114,6 +108,7 @@ class MasterTab(Toolbox):
                 tab.record_event("RECORDING_STOP", event_type="record", write_to_csv=False)
                 tab.is_recording = False
                 tab.daq.stop_vis_schedule()
+                tab.daq.set_vis_led_dac(tab.vis_dac_baseline)
                 tab.recorder.close_csv()
                 dpg.configure_item(tab.t('start_button'), label='START')
         self.update_recording_state()

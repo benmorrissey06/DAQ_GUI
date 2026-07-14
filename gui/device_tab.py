@@ -48,6 +48,8 @@ class DeviceTab(Toolbox):
         self.ch4_active = False
 
         self.is_recording = False
+        self.vis_dac_baseline = 0
+        self.vis_schedule = []
         self._plot_event_line_tags = {ch: [] for ch in CH_TAGS}
 
         '''
@@ -237,11 +239,11 @@ class DeviceTab(Toolbox):
         if parsed is None:
             return
 
-        raw, volts = parsed
+        sample_counter, high, low, difference, volts = parsed
         self.update_plots(volts, time.time())
 
         if self.is_recording:
-            self.recorder.write_row(raw)
+            self.recorder.write_row(sample_counter, high, low, difference)
 
     def toggle_plots(self, sender, app_data, user_data):
         if app_data == "CH3 (VIS Current)":
@@ -337,6 +339,8 @@ class DeviceTab(Toolbox):
         self.is_recording = not getattr(self, 'is_recording', False)
         if self.is_recording:
             self.start_time = time.time()
+            self.vis_dac_baseline = dpg.get_value(self.t("s_VIS LED Gain"))
+            self.make_vis_schedule()
         else:
             self.record_event("RECORDING_STOP", event_type="record", write_to_csv=False)
         label = "STOP" if self.is_recording else "START"
@@ -359,18 +363,7 @@ class DeviceTab(Toolbox):
                     return
                 self.record_event("RECORDING_START", event_type="record", write_to_csv=False)
                 #capture current settings for json file
-                self.recorder.write_metadata_sidecar({
-                    "date": self.date,
-                    "cohort": self.app.master.cohort or "",
-                    "animal_id": self.animal_id or "",
-                    "test_label": self.app.master.test_label or "",
-                    "recording_duration": self.recording_duration,
-                    "sample_rate": dpg.get_value(self.t("sample_rate_input")),
-                    "decimation": dpg.get_value(self.t("stream_decimation_input")),
-                    "vis_pd_gain": dpg.get_value(self.t("s_VIS PD Gain")),
-                    "ir_pd_gain": dpg.get_value(self.t("s_IR PD Gain")),
-                    "vis_led_dac": dpg.get_value(self.t("s_VIS LED Gain")),
-                })
+                self.recorder.write_metadata_sidecar(self.recording_metadata(dpg.get_value(self.t("sample_rate_input")), dpg.get_value(self.t("stream_decimation_input")), dpg.get_value(self.t("s_VIS PD Gain")), dpg.get_value(self.t("s_IR PD Gain"))))
                 self.upload_schedule_to_daq()
             else:
                 self.is_recording = False
@@ -380,6 +373,7 @@ class DeviceTab(Toolbox):
                     pass
         else:
             self.daq.stop_vis_schedule()
+            self.daq.set_vis_led_dac(self.vis_dac_baseline)
             self.recorder.close_csv()
         self.app.master.update_recording_state()
 
@@ -387,12 +381,32 @@ class DeviceTab(Toolbox):
         if not self.daq.is_open:
             return
         self.daq.clear_vis_schedule()
-        for (start_s, end_s), uv_val in sorted(zip(self.time_stamps, self.light_values)):
-            self.daq.append_schedule_step(start_s, uv_val)
-            self.daq.append_schedule_step(end_s, 0)
-            self.record_event("UV", value=uv_val, event_type="uv", host_time=self.start_time + start_s)
-            self.record_event("UV", value=0, event_type="uv", host_time=self.start_time + end_s)
+        for time_s, dac_code in self.vis_schedule:
+            self.daq.append_schedule_step(time_s, dac_code)
+            self.record_event("UV", value=dac_code, event_type="uv", host_time=self.start_time + time_s)
         self.daq.start_vis_schedule()
+
+    def make_vis_schedule(self):
+        self.vis_schedule = []
+        for (start_s, end_s), dac_code in sorted(zip(self.time_stamps, self.light_values)):
+            self.vis_schedule += [(start_s, dac_code), (end_s, self.vis_dac_baseline)]
+        self.vis_schedule.sort(key=lambda step: step[0])
+
+    def recording_metadata(self, sample_rate, stream_decimation, vis_gain, ir_gain):
+        return {
+            "recording_start": datetime.fromtimestamp(self.start_time).strftime("%Y-%m-%dT%H:%M:%S"),
+            "cohort": self.app.master.cohort or "",
+            "test": self.app.master.test_label or "",
+            "animal_id": self.animal_id or "",
+            "port": self.daq.serial.port if self.daq.serial else "",
+            "sample_rate_hz": sample_rate,
+            "stream_decimation": stream_decimation,
+            "vis_gain": vis_gain,
+            "ir_gain": ir_gain,
+            "vis_dac_code": self.vis_dac_baseline,
+            "recording_duration_s": self.recording_duration,
+            "vis_schedule": [{"time_s": time_s, "dac_code": dac_code} for time_s, dac_code in self.vis_schedule],
+        }
 
     # general
 
@@ -421,6 +435,7 @@ class DeviceTab(Toolbox):
         self.record_event("RECORDING_STOP", event_type="record", write_to_csv=False)
         self.is_recording = False
         self.daq.stop_vis_schedule()
+        self.daq.set_vis_led_dac(self.vis_dac_baseline)
         self.recorder.close_csv()
         dpg.configure_item(self.t('start_button'), label='START')
         self.app.master.update_recording_state()
