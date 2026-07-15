@@ -55,8 +55,6 @@ class DAQController:
             cmd = f"{command},{value},{value2}\n"
 
         try:
-            self.serial.reset_input_buffer()
-            self.serial.reset_output_buffer()
             self.serial.write(cmd.encode("utf-8"))
             self.serial.flush()
         except Exception as e:
@@ -95,8 +93,10 @@ class DAQController:
         except ValueError:
             return None
 
-        difference = tuple(h - l for h, l in zip(high, low))
-        volts = tuple((r / 32768.0) * 5.0 for r in high[:2])
+        high_signed = tuple(r if r < 32768 else r - 65536 for r in high)
+        low_signed = tuple(r if r < 32768 else r - 65536 for r in low)
+        difference = tuple(h - l for h, l in zip(high_signed, low_signed))
+        volts = tuple((r / 32768.0) * 5.0 for r in high_signed[:2])
         return sample_counter, high, low, difference, volts
 
     def handle_stream_line(self, line):
