@@ -24,6 +24,7 @@
               Firmware emits SCHED,T,D on serial when each step fires.
     14,0      Start schedule execution (resets clock and index)
     15,0      Stop schedule execution
+    16,0-100  Set IR LED Intensity via duty cycle, 0=off, 100= full on.
 */
 
 #define SDA_PIN 3
@@ -49,6 +50,9 @@ uint32_t sampleCounter = 0;
 uint32_t sampleRateHz = 100;
 uint32_t samplePeriodUs = 10000;   // 1 000 000 / sampleRateHz
 uint32_t lastSampleUs = 0;
+uint8_t irLedDutyPercent = 100;
+static const uint32_t IR_PWM_FREQUENCY_HZ = 100000;
+static const uint8_t IR_PWM_RESOLUTION_BITS = 8;
 
 #define MAX_SCHED 32
 uint32_t schedTimesS[MAX_SCHED];
@@ -107,12 +111,15 @@ void setup() {
   pinMode(INDICATOR_LED_PIN, OUTPUT);
   pinMode(AUX_PIN_2, OUTPUT);
   pinMode(AUX_PIN_8, OUTPUT);
-  pinMode(IRLED_PIN, OUTPUT);
+  //pinMode(IRLED_PIN, OUTPUT);
 
   setIndicatorLed(false);
   digitalWrite(AUX_PIN_2, LOW);
   digitalWrite(AUX_PIN_8, LOW);
-  digitalWrite(IRLED_PIN, LOW);
+  if (!ledcAttach(IRLED_PIN, IR_PWM_FREQUENCY_HZ, IR_PWM_RESOLUTION_BITS)) {
+    Serial.println("ERR IR LED PWM initialization failed");
+  }
+  ledcWrite(IRLED_PIN, 0);
 
   Wire.begin(SDA_PIN, SCL_PIN);
   AD01.begin();
@@ -156,12 +163,14 @@ void loop() {
     }
     lastSampleUs = now;
 
-    digitalWrite(IRLED_PIN, HIGH);
+     
+
+    ledcWrite(IRLED_PIN, (irLedDutyPercent * 255UL + 50UL) / 100UL);
     delayMicroseconds(500);
 
     bool highOk = adcReadChannels1to4(highdata);
 
-    digitalWrite(IRLED_PIN, LOW);
+    ledcWrite(IRLED_PIN, 0);
     delayMicroseconds(500);
 
     bool lowOk = false;
@@ -329,6 +338,17 @@ void parseserial() {
       Serial.println("OK Schedule stopped");
       break;
 
+    case 16: {
+      if (value < 0) value = 0;
+      if (value > 100) value = 100;
+      if (value > 0 && value < 40) value = 40;
+      irLedDutyPercent = (uint8_t)value;
+      Serial.print("OK IR LED duty cycle set to ");
+      Serial.print(irLedDutyPercent);
+      Serial.println("%");
+      break;
+    }
+
     default:
       Serial.print("ERR unknown command: ");
       Serial.println(command);
@@ -350,7 +370,7 @@ void setDeviceOperating(bool enable) {
     schedIdx = 0;
     setIndicatorLed(false);
     setVisLed(0);
-    digitalWrite(IRLED_PIN, LOW);
+    ledcWrite(IRLED_PIN, 0);
     Serial.println("OK Device OFF");
   }
 }
@@ -390,9 +410,9 @@ bool setVisLed(uint16_t value) {
 }
 
 void pulseIrLed(uint32_t duration_us) {
-  digitalWrite(IRLED_PIN, HIGH);
+  ledcWrite(IRLED_PIN, 255);
   delayMicroseconds(duration_us);
-  digitalWrite(IRLED_PIN, LOW);
+  ledcWrite(IRLED_PIN, 0);
 }
 
 void printStatus() {

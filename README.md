@@ -117,6 +117,14 @@ X button for tabs
 
 Adapt to any new firmware changes
 
+Note: turning on with live in master applies master's settings from decimation/sample - not sure if we want this
+
+0 s recording is kinda a bug.
+
+Make the warnings look nicer, maybe no separators
+
+make the error pop up for no folder selected in master like it does in individual device
+
 Package in Executable program
 
 ```

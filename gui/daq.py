@@ -129,8 +129,8 @@ class DAQController:
     def set_vis_led_dac(self, value):
         self.send_command(3, value)
 
-    def pulse_ir_led(self, duration_us):
-        self.send_command(4, duration_us)
+    def pulse_ir_led(self, value):
+        self.send_command(16, value)
 
     def request_status(self):
         self.send_command(7, 0)
