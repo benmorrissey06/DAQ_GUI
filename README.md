@@ -103,6 +103,12 @@ TO DO:
 
 MOST IMPORTANT: IR LED INTENSITY
 
+COM port connection error notis
+
+if int input is above max clamp it
+
+Rename master IR LED blink
+
 Polish this very readme to be more organized and clear
 
 if multiple events occur at once, there is no system in place right now.

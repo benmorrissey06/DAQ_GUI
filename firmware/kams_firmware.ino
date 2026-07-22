@@ -166,12 +166,12 @@ void loop() {
      
 
     ledcWrite(IRLED_PIN, (irLedDutyPercent * 255UL + 50UL) / 100UL);
-    delayMicroseconds(500);
+    delayMicroseconds(1000);
 
     bool highOk = adcReadChannels1to4(highdata);
 
     ledcWrite(IRLED_PIN, 0);
-    delayMicroseconds(500);
+    delayMicroseconds(1000);
 
     bool lowOk = false;
     if (highOk) {
@@ -339,9 +339,6 @@ void parseserial() {
       break;
 
     case 16: {
-      if (value < 0) value = 0;
-      if (value > 100) value = 100;
-      if (value > 0 && value < 40) value = 40;
       irLedDutyPercent = (uint8_t)value;
       Serial.print("OK IR LED duty cycle set to ");
       Serial.print(irLedDutyPercent);

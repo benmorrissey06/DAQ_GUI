@@ -11,7 +11,7 @@ IR_PD_MAX = 255
 VIS_LED_MAX = 4095
 
 SLIDER_DEFS = {
-    "IR LED Blink": (100, "pulse_ir_led"),
+    "IR LED Intensity": (100, "pulse_ir_led"),
     "VIS PD Gain": (VIS_PD_MAX, "set_visible_pd_gain"),
     "IR PD Gain": (IR_PD_MAX, "set_ir_pd_gain"),
     "VIS LED Gain": (VIS_LED_MAX, "set_vis_led_dac"),

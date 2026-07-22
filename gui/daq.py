@@ -130,7 +130,15 @@ class DAQController:
         self.send_command(3, value)
 
     def pulse_ir_led(self, value):
-        self.send_command(16, value)
+        min_val = 49 #49 is the minimum value for IR LED intensity that actually results in some output - anything below is nothing, likely due to time delays
+        max_val = 100
+        value_to_send = int((((max_val-min_val)/100)*value)+min_val) #map the sent value between our min and max values
+        #also we rounded it to nearest integer since that's what firmware expects
+        value_to_send = 100 if value_to_send > 100 else value_to_send
+        value_to_send = min_val if value_to_send < min_val else value_to_send 
+        #clamp it
+
+        self.send_command(16, value_to_send)
 
     def request_status(self):
         self.send_command(7, 0)
