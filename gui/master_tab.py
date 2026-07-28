@@ -111,6 +111,9 @@ class MasterTab(Toolbox):
         if any(tab.is_recording for tab in self.app.device_tabs):
             self.stop_all(sender, app_data, user_data)
             return
+        if self.recording_duration <= 0:
+            self.set_recording_warning(["Recording duration must be greater than 0."])
+            return
         warnings = []
         ready = []
         for tab in self.app.device_tabs:

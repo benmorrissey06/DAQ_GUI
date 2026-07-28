@@ -76,6 +76,8 @@ While starting a recording, manual controls will be locked
 
 While automating a recording, the time segments determine the value of the VIS LED at a given moment, but for any times for which a segment is not defined, the value set for VIS LED before the recording starts will be the default baseline for that recording
 
+turning on with live in master applies master's settings from decimation/sample - not sure if we want this
+
 ## Data format
 
 ...
@@ -83,7 +85,7 @@ While automating a recording, the time segments determine the value of the VIS L
 ## Key Features
 
 ```text
-Ability to define file name, path, and recording duration from the gui
+Ability to define file path, and recording duration from the gui
 
 Automatic file naming based on current time and entered data
 
@@ -98,39 +100,16 @@ save results as CSV and capture recording settings in a json
 View events in the saved CSV and live on the graph
 ```
 
-```text
-TO DO:
 
-MOST IMPORTANT: IR LED INTENSITY
-
-COM port connection error notis
 
 if int input is above max clamp it
 
-Rename master IR LED blink
 
-Polish this very readme to be more organized and clear
+Note: 
 
-if multiple events occur at once, there is no system in place right now.
 
-Make it so that resizing plots does not erase previous data
 
-ensure everything is safe if device unexpectedly disconnects
 
-Make graph resume where you left off when you stop via Live button***
 
-X button for tabs
-
-Adapt to any new firmware changes
-
-Note: turning on with live in master applies master's settings from decimation/sample - not sure if we want this
-
-0 s recording is kinda a bug.
-
-Make the warnings look nicer, maybe no separators
-
-make the error pop up for no folder selected in master like it does in individual device
-
-Package in Executable program
 
 ```

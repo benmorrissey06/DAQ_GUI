@@ -53,13 +53,13 @@ class Toolbox:
         for label, (max_val, _) in slider_defs.items():
             if compact:
                 with dpg.group(horizontal=False):
-                    dpg.add_text(label)
+                    dpg.add_text(f"{label} (0-{max_val})")
                     with dpg.group(horizontal=True):
                         dpg.add_slider_int(max_value=max_val, width=135, tag=self.t(f"s_{label}"),callback = self.on_slider_changed, user_data=label,format="")
                         dpg.add_input_int(label='', width=33, tag=self.t(f"i_{label}"),callback = self.on_slider_changed, user_data=label, step=0)
                         dpg.add_button(width = 50, label="Set",tag = self.t(f"set_{label}"), callback=self.on_slider_changed, user_data=label)
             else:
-                dpg.add_text(label)
+                dpg.add_text(f"{label} (0-{max_val})")
                 with dpg.group(horizontal=True):
                     dpg.add_slider_int(max_value=max_val, width=150, tag=self.t(f"s_{label}"), callback=self.on_slider_changed, user_data=label,format="")
                     dpg.add_input_int(label='', width=80, tag=self.t(f"i_{label}"), callback=self.on_slider_changed, user_data=label, step=0)
@@ -198,8 +198,10 @@ class Toolbox:
             dpg.set_value(self.t(f"s_{user_data}"), app_data)
             dpg.set_value(self.t(f"i_{user_data}"), app_data)
         else:
-            slider_value = dpg.get_value(self.t(f"s_{user_data}")) 
-            method_name = (DEVICE_SLIDER_DEFS if self.compact else SLIDER_DEFS)[user_data][1]
+            max_val, method_name = (DEVICE_SLIDER_DEFS if self.compact else SLIDER_DEFS)[user_data]
+            slider_value = max(0, min(max_val, dpg.get_value(self.t(f"i_{user_data}"))))
+            dpg.set_value(self.t(f"s_{user_data}"), slider_value)
+            dpg.set_value(self.t(f"i_{user_data}"), slider_value)
             if self.compact:
                 if not self.daq.is_open:
                     self.update_general_status()

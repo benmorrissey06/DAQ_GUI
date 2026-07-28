@@ -359,6 +359,9 @@ class DeviceTab(Toolbox):
             if not self.is_live: #make sure we ready to start
                 self.set_recording_warning(["Device not live."])
                 return
+            if dpg.get_value(self.t("recording_duration_input")) <= 0:
+                self.set_recording_warning(["Recording duration must be greater than 0."])
+                return
             self.set_recording_warning([])
         name = dpg.get_value(self.t("filename"))
         
