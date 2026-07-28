@@ -1,7 +1,9 @@
 import dearpygui.dearpygui as dpg
+import serial
 import threading
 import time
 import os
+from contextlib import suppress
 from daq import DAQController
 from save_recording import DataRecorder
 from datetime import datetime
@@ -156,7 +158,9 @@ class DeviceTab(Toolbox):
         availablePortsStrings = self.daq.get_available_ports()
         if availablePortsStrings:
             for port in availablePortsStrings:
+                #linux recognizes ports beyond hardware ports here, so to get it working on those devices, we would have to do a check here. Leaving it as is for now.
                 dpg.add_button(label=port, parent=self.t('com_port_group'), user_data=port, callback=self.connect_port,tag =self.t(f"connect_{port}"))
+                dpg.add_text("", parent=self.t('com_port_group'), tag=self.t(f"connect_error_{port}"))
         else:
             dpg.add_text('No COM Ports detected', parent=self.t('com_port_group'))
 
@@ -164,9 +168,10 @@ class DeviceTab(Toolbox):
         self.view_ports()
 
     def connect_port(self, sender, app_data, user_data):
-        self.daq.connect(user_data)
-        dpg.configure_item(self.t(f"connect_{user_data}"), label=f"{user_data} (Connected)")
-        self.update_general_status()
+        connected, error = self.daq.connect(user_data)
+        dpg.configure_item(self.t(f"connect_{user_data}"), label=f"{user_data} (Connected)" if connected else user_data)
+        dpg.set_value(self.t(f"connect_error_{user_data}"), error)
+        self.set_general_message("" if connected else getattr(self, "general_message", ""))
         self.app.master.update_device_status(self)
 
     # Plotting
@@ -457,6 +462,11 @@ class DeviceTab(Toolbox):
                     while self.daq.serial.in_waiting > 0:
                         line = self.daq.serial.readline()
                         self.process_serial_line(line)
+                except serial.SerialException:
+                    self.is_live = False
+                    self.daq.disconnect() #close previous connections
+                    self.set_general_message("Connection lost.")
+                    self.app.mas1ter.update_device_status(self)
                 except Exception:
                     pass
             time.sleep(0.01)
@@ -472,12 +482,13 @@ class DeviceTab(Toolbox):
 
     def shutdown(self):
         self.running = False
-        self.worker.join(timeout=.1)
         if self.is_recording:
-            self.record_event("RECORDING_STOP", event_type="record", write_to_csv=False)
+            with suppress(Exception):
+                self.record_event("RECORDING_STOP", event_type="record", write_to_csv=False)
         self.is_live = self.is_recording = False
-        self.recorder.close_csv()
-        try:
+        with suppress(Exception):
+            self.recorder.close_csv()
+        with suppress(Exception):
             self.daq.turn_off()
-        except Exception:
-            self.daq.disconnect()
+        self.daq.disconnect()
+        self.worker.join(timeout=1)

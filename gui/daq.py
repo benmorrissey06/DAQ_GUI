@@ -25,23 +25,30 @@ class DAQController:
     
     def connect(self, port_name):
         try:
-            self.serial = serial.Serial(
+            connection = serial.Serial(
                 port=port_name,
                 baudrate=115200,
                 timeout=0.01,
                 write_timeout=1.0,  # Allow enough time for a command to be written
             )
-            self.is_open = self.serial.isOpen()
-            return True
+            self.disconnect() #close previous connections, the new one isnt stored as one until after, so it remains
+            self.serial = connection
+            self.is_open = connection.is_open
+
+            return self.is_open, ""
         except Exception as e:
-            print(e)
-            return False
+            error = str(e).lower()
+            return False, "Access denied" if "denied" in error or "permission" in error else "Port unavailable" if "not found" in error or "cannot find" in error else "Connection failed"
 
     def disconnect(self):
-        if self.serial is not None and self.serial.is_open:
-            self.serial.close()
-        self.serial = None
-        self.is_open = False
+        try:
+            if self.serial is not None and self.serial.is_open:
+                self.serial.close()
+        except Exception:
+            pass
+        finally:
+            self.serial = None
+            self.is_open = False
 
     def send_command(self, command, value=None, value2=None, wait_for_response=False):
         if not self.is_open or self.serial is None:
@@ -110,8 +117,10 @@ class DAQController:
         return self.parse_stream_data_line(text)
 
     def turn_off(self):
-        if self.is_open:
-            self.send_command(0, 0) # turn device off first
+        try:
+            if self.is_open:
+                self.send_command(0, 0) # turn device off first
+        finally:
             self.disconnect()
 
     def start_device(self):
