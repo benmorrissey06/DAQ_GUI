@@ -217,5 +217,5 @@ The GUI communicates at 115200 baud. Most commands use `COMMAND,VALUE\n`; comman
 | `13` | `T,D` | At T seconds after schedule start, set the VIS LED to DAC code D. |
 | `14` | `0` | Start schedule execution and reset its clock and index. |
 | `15` | `0` | Stop schedule execution. |
-| `16` | `0-100` | Set IR LED intensity by duty cycle. |
+| `16` | `0-100` | Set IR LED intensity by duty cycle. (0 is not the literal minimum, but rather the minimum the hardware can support, and 100 means always on during high readings so technically it's 50%) |
 
