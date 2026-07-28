@@ -25,7 +25,7 @@ DEVICE_SLIDER_DEFS = {
 }
 
 class Toolbox:
-    def initialize_toolbox(self, compact):
+    def initialize_toolbox(self, compact): #compact flag determines whether it's used for master or device tab, as the layout is a bit different
         self.compact = compact
         self.is_live = False
         self.light_values = []
@@ -55,13 +55,13 @@ class Toolbox:
                 with dpg.group(horizontal=False):
                     dpg.add_text(label)
                     with dpg.group(horizontal=True):
-                        dpg.add_slider_int(max_value=max_val, width=135, tag=self.t(f"s_{label}"),callback = self.on_slider_changed, user_data=label)
+                        dpg.add_slider_int(max_value=max_val, width=135, tag=self.t(f"s_{label}"),callback = self.on_slider_changed, user_data=label,format="")
                         dpg.add_input_int(label='', width=33, tag=self.t(f"i_{label}"),callback = self.on_slider_changed, user_data=label, step=0)
                         dpg.add_button(width = 50, label="Set",tag = self.t(f"set_{label}"), callback=self.on_slider_changed, user_data=label)
             else:
                 dpg.add_text(label)
                 with dpg.group(horizontal=True):
-                    dpg.add_slider_int(max_value=max_val, width=150, tag=self.t(f"s_{label}"), callback=self.on_slider_changed, user_data=label)
+                    dpg.add_slider_int(max_value=max_val, width=150, tag=self.t(f"s_{label}"), callback=self.on_slider_changed, user_data=label,format="")
                     dpg.add_input_int(label='', width=80, tag=self.t(f"i_{label}"), callback=self.on_slider_changed, user_data=label, step=0)
                     dpg.add_button(label="Set", callback=self.on_slider_changed, user_data=label,tag=self.t(f"set_{label}_button"))
         dpg.add_separator()

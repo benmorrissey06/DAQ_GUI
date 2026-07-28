@@ -43,6 +43,7 @@ class DeviceTab(Toolbox):
         self.times = []
         self.ch_data = [[] for _ in range(4)]
         self.checked_order = []
+        self.plot_heights = 300
         self.t0 = None
         self.plot_window_s = 10.0
         self.ch4_active = False
@@ -100,7 +101,8 @@ class DeviceTab(Toolbox):
                     dpg.configure_item(self.t("plot_panel"), show=True)
                     with dpg.group(horizontal=True, tag=self.t("plot_header_controls"), show=True):
                         dpg.add_input_int(label="Plot Window (s)", width=100, default_value=10, min_value=1, max_value=60, tag=self.t("plot_window_input"), callback=self.update_plot_window_s)
-                        dpg.add_combo(label="Select Bottom Right Channel", width=300, items=["CH3 (VIS Current)", "CH4 (IR Current)"], default_value="CH3 (VIS Current)", callback=self.toggle_plots, tag=self.t("bottom_right_combo"))
+                        dpg.add_combo(label="Select Bottom Right Channel", width=200, items=["CH3 (VIS Current)", "CH4 (IR Current)"], default_value="CH3 (VIS Current)", callback=self.toggle_plots, tag=self.t("bottom_right_combo"))
+                        dpg.add_slider_int(label="Fit Plots to Screen", width=150, default_value=self.plot_heights, min_value=250, max_value=600, callback=self.update_plot_height,format="")
                     with dpg.group(tag=self.t("plot_area"), show=True):
                         with dpg.group(tag=self.t("plot_staging"), show=True):
     
@@ -113,7 +115,7 @@ class DeviceTab(Toolbox):
                             for i in range(4):
                                 ch = CH_TAGS[i]
                                 with dpg.group(tag=self.t(f"wrap_{ch}"), show=True):
-                                    with dpg.plot(label=CH_NAMES[i], height=300, width=-1, tag=self.t(f"plot_{ch}")):
+                                    with dpg.plot(label=CH_NAMES[i], height=self.plot_heights, width=-1, tag=self.t(f"plot_{ch}")):
                                         dpg.add_plot_legend()
                                         dpg.add_plot_axis(dpg.mvXAxis, label="time (s)", tag=self.t(f"{ch}_x_axis"))
                                         with dpg.plot_axis(dpg.mvYAxis, label="Volts" if i < 2 else "Raw ADC Counts", tag=self.t(f"{ch}_y_axis")):
@@ -262,6 +264,10 @@ class DeviceTab(Toolbox):
             self.ch4_active = True
         self._layout_plots()
 
+    def update_plot_height(self, sender, app_data, user_data):
+        self.plot_heights = app_data
+        self._layout_plots()
+
     def _layout_plots(self):
         '''
         layout the plots in a 2x2 grid, with IR PD permanently occupying top 2, VIS PD permanently bottom left. 
@@ -287,7 +293,7 @@ class DeviceTab(Toolbox):
         top_row = dpg.add_table_row(parent=top_table)
         dpg.move_item(self.t("wrap_ch1"), parent=top_row)
         dpg.configure_item(self.t("wrap_ch1"), show=True)
-        dpg.configure_item(self.t("plot_ch1"), width=-1, height=300)
+        dpg.configure_item(self.t("plot_ch1"), width=-1, height=self.plot_heights)
 
         #Bottom table has two columns, so we can have ch2 on the left, and condition to have ch3 or 4 on right. they split the area evenly, which is caused by there being two columns.
         bottom_table = dpg.add_table(parent=self.t("plot_container"), header_row=False)
@@ -296,15 +302,15 @@ class DeviceTab(Toolbox):
         bottom_row = dpg.add_table_row(parent=bottom_table)
         dpg.move_item(self.t("wrap_ch2"), parent=bottom_row)
         dpg.configure_item(self.t("wrap_ch2"), show=True)
-        dpg.configure_item(self.t("plot_ch2"), width=-1, height=300)
+        dpg.configure_item(self.t("plot_ch2"), width=-1, height=self.plot_heights)
         if self.ch4_active:
             dpg.move_item(self.t("wrap_ch4"), parent=bottom_row)
             dpg.configure_item(self.t("wrap_ch4"), show=True)
-            dpg.configure_item(self.t("plot_ch4"), width=-1, height=300)
+            dpg.configure_item(self.t("plot_ch4"), width=-1, height=self.plot_heights)
         else:
             dpg.move_item(self.t("wrap_ch3"), parent=bottom_row)
             dpg.configure_item(self.t("wrap_ch3"), show=True)
-            dpg.configure_item(self.t("plot_ch3"), width=-1, height=300)
+            dpg.configure_item(self.t("plot_ch3"), width=-1, height=self.plot_heights)
 
     def live_plot_toggle(self, sender, app_data, user_data):
         '''
