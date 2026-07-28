@@ -215,7 +215,10 @@ class Toolbox:
                     if tab.daq.is_open:
                         getattr(tab.daq, method_name)(slider_value)
                         tab.record_event(f"MASTER_{user_data}", value=slider_value, event_type="control")
-
+    '''
+    for these functions we make sure we actually have devices ready/connected, when we're in master, so we can notify 
+    the user if not
+    '''
     def set_stream_decimation(self, sender, app_data, user_data):
         if sender == self.t('set_stream_decimation_button'):
             value = dpg.get_value(self.t("stream_decimation_input"))

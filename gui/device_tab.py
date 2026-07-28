@@ -92,7 +92,7 @@ class DeviceTab(Toolbox):
                             with dpg.group(tag=self.t('com_port_group')):
                                 self.view_ports()
                             dpg.add_spacer(height=10)
-                            dpg.add_text("Hardware Controls")
+                            #dpg.add_text("Hardware Controls")
                             dpg.add_separator()
                             self.event_colors = EVENT_COLORS
                             self.draw_general_ctrls(compact=True)
@@ -106,7 +106,7 @@ class DeviceTab(Toolbox):
                     with dpg.group(horizontal=True, tag=self.t("plot_header_controls"), show=True):
                         dpg.add_input_int(label="Plot Window (s)", width=100, default_value=10, min_value=1, max_value=60, tag=self.t("plot_window_input"), callback=self.update_plot_window_s)
                         dpg.add_combo(label="Select Bottom Right Channel", width=200, items=["CH3 (VIS Current)", "CH4 (IR Current)"], default_value="CH3 (VIS Current)", callback=self.toggle_plots, tag=self.t("bottom_right_combo"))
-                        dpg.add_slider_int(label="Fit Plots to Screen", width=150, default_value=self.plot_heights, min_value=250, max_value=600, callback=self.update_plot_height,format="")
+                        dpg.add_slider_int(label="Fit Plots to Screen", width=150, default_value=self.plot_heights, min_value=200, max_value=600, callback=self.update_plot_height,format="")
                     with dpg.group(tag=self.t("plot_area"), show=True):
                         with dpg.group(tag=self.t("plot_staging"), show=True):
     
@@ -356,7 +356,7 @@ class DeviceTab(Toolbox):
             if not self.daq.is_open:
                 self.update_general_status()
                 return
-            if not self.is_live:
+            if not self.is_live: #make sure we ready to start
                 self.set_recording_warning(["Device not live."])
                 return
             self.set_recording_warning([])
