@@ -162,7 +162,6 @@ NOTE*** The plots scale differently depending on your devices screen size, so us
 - Timed segments define the VIS LED DAC value between a start and end time
 - Segments cannot overlap or extend beyond the recording duration
 - For any time without a defined segment, the VIS LED value set before recording becomes the baseline
-- The schedule is uploaded and started with the recording so the device clock controls the timing without host-side timing jitter
 - Recordings stop automatically when their duration is reached, or can be stopped manually
 - Turning on **LIVE** from the Master tab applies the Master decimation and sample-rate settings
 
