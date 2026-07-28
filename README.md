@@ -1,19 +1,18 @@
 # DAQ GUI
 
-A graphical interface for connecting to DAQ devices, streaming and plotting data, controlling hardware settings, and running timed recordings across one or multiple devices.
+A graphical interface for connecting to *DAQ devices*, **streaming and plotting data**, **controlling hardware settings**, and **running timed recordings** across one or multiple devices.
 
-Made with the DearPyGUI library for clean interface, super readable code, and low line counts to make it easy to maintain. 
+Made with the **DearPyGUI** library for **clean interface**, **super readable code**, and **low line counts** to make it easy to maintain. 
 
-Also very modular, so made up of 7 distinct files, each with a manageable size. 
+Also **very modular**, so made up of 7 distinct files, each with a manageable size. 
 
-- daq.py for serial communication
-- device_tab.py for a single device interface
-- main_gui.py to manage tabs 
-- master_tab.py interface to control multiple devices at once
-- save_recording.py to handle file saving
-- toolbox.py shared class to draw controls for both device tab and master tab
-
-- main.py starts the program
+- **daq.py** for serial communication
+- **device_tab.py** for a single device interface
+- **main_gui.py** to manage tabs 
+- **master_tab.py** interface to control multiple devices at once
+- **save_recording.py** to handle file saving
+- **toolbox.py** shared class to draw controls for both device tab and master tab
+- **main.py** starts the program
 
  Set to light mode by default. Hope you find it useful! 👍
 
@@ -32,7 +31,8 @@ Also very modular, so made up of 7 distinct files, each with a manageable size.
 - Save results as CSV and capture recording settings in a JSON sidecar
 - Record significant controls and schedule changes in the CSV `event` column
 - Display color-coded event markers directly on the live plots
-  (imagekey)
+  <img width="379" height="222" alt="image" src="https://github.com/user-attachments/assets/36895d3c-fab2-4345-836f-bddd17efd4f1" />
+
 
 ## Requirements
 
@@ -108,11 +108,11 @@ python3 gui/main.py
 
 1. Enter the shared **Cohort** and **Test Label** values in the Master tab.
 2. Click **+** button (in tab or device monitor) to add a device.
-  (image +)
+   <img width="959" height="538" alt="image" src="https://github.com/user-attachments/assets/9eb4ea77-4fcc-48f1-8218-214426b5acde" />
 3. Enter a specific device tab by clicking on it, enter an **Animal ID** and click the desired COM port.
 4. Turn on **LIVE** to start the device and begin streaming.
 5. Apply the desired settings in **General Controls**, or set up a timed recording in **Recording Controls**. (switch between them by clicking on those tabs)
-  (image controls)
+   <img width="1906" height="1030" alt="image" src="https://github.com/user-attachments/assets/1152c7ba-a146-4821-bf1e-508a9c75db32" />
 6. Select CH3 or CH4 for the bottom-right plot and adjust the plot window or height as needed.
 7. Use the **Master** tab to apply settings or recording controls across all connected devices.
 
@@ -152,7 +152,8 @@ Each plot auto-scales on the y axis independently. The plot window defaults to 1
 Color-coded vertical event markers show important actions such as LIVE changes, recording controls, gain or LED changes, stream settings, and VIS schedule steps. The event color key can be shown from the device controls.
 
 NOTE*** The plots scale differently depending on your devices screen size, so use the slider to fit it to your screen if it requires adjusting.
-  (image scale)
+<img width="753" height="488" alt="image" src="https://github.com/user-attachments/assets/52714d5d-f3ec-4054-81cc-bbc7568b0a08" />
+
 
 ## Recording Behavior
 
