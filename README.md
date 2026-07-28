@@ -31,7 +31,7 @@ Also **very modular**, so made up of 7 distinct files, each with a manageable si
 - Save results as CSV and capture recording settings in a JSON sidecar
 - Record significant controls and schedule changes in the CSV `event` column
 - Display color-coded event markers directly on the live plots
-  <img width="379" height="222" alt="image" src="https://github.com/user-attachments/assets/36895d3c-fab2-4345-836f-bddd17efd4f1" />
+<img width="379" height="222" alt="image" src="https://github.com/user-attachments/assets/36895d3c-fab2-4345-836f-bddd17efd4f1" />
 
 
 ## Requirements
