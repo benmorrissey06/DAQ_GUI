@@ -33,6 +33,14 @@ class MainGUI:
         self.tab_counter += 1
         tab = DeviceTab(self.tab_counter, "main_tab_bar", self)
         self.device_tabs.append(tab)
+        self.master.add_device(tab)
+
+    def remove_device_tab(self, tab):
+        tab.shutdown()
+        self.device_tabs.remove(tab)
+        dpg.delete_item(tab.t("device_tab"))
+        dpg.delete_item(tab.t("manager"))
+        self.master.update_recording_state()
 
     def run(self):
         dpg.set_primary_window("main window", True)
@@ -41,5 +49,5 @@ class MainGUI:
             dpg.start_dearpygui()
         finally:
             for tab in self.device_tabs:
-                tab.daq.turn_off()
+                tab.shutdown()
             dpg.destroy_context()

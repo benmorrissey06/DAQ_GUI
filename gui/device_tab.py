@@ -30,6 +30,7 @@ class DeviceTab(Toolbox):
         self.tab_bar_tag = tab_bar_tag
         self.app = app
         self.animal_id = None
+        self.name = f"Device {self.tid}"
 
         self.daq = DAQController()
         self.recorder = DataRecorder()
@@ -66,7 +67,8 @@ class DeviceTab(Toolbox):
         self.ttl_width = 0.0
 
         self.build_ui()
-        threading.Thread(target=self.hardware_thread, daemon=True).start()
+        self.worker = threading.Thread(target=self.hardware_thread, daemon=True)
+        self.worker.start()
 
     def build_ui(self):
         '''
@@ -77,7 +79,7 @@ class DeviceTab(Toolbox):
         to allow easy manipulation of the layout via a code interface, 
         and this easily separates  hardware commands code (in daq.py) from code for the GUI "frontend"or visual elements
         '''
-        with dpg.tab(label=f"Device {self.tid}", parent=self.tab_bar_tag, tag=self.t("device_tab"), before="add_tab_button"):
+        with dpg.tab(label=self.name, parent=self.tab_bar_tag, tag=self.t("device_tab"), before="add_tab_button"):
             with dpg.group(horizontal=True):
                 with dpg.child_window(width=250, height=-65):
                     with dpg.tab_bar():
@@ -165,6 +167,7 @@ class DeviceTab(Toolbox):
         self.daq.connect(user_data)
         dpg.configure_item(self.t(f"connect_{user_data}"), label=f"{user_data} (Connected)")
         self.update_general_status()
+        self.app.master.update_device_status(self)
 
     # Plotting
     def update_plot_window_s(self, sender, app_data, user_data):
@@ -332,6 +335,7 @@ class DeviceTab(Toolbox):
             self.daq.set_adc_streaming(False)
             self.daq.stop_device()
             self.record_event("LIVE_OFF", value=0, event_type="live")
+        self.app.master.update_device_status(self)
 
     # Recording Control
    
@@ -465,3 +469,15 @@ class DeviceTab(Toolbox):
         self.recorder.close_csv()
         dpg.configure_item(self.t('start_button'), label='START')
         self.app.master.update_recording_state()
+
+    def shutdown(self):
+        self.running = False
+        self.worker.join(timeout=.1)
+        if self.is_recording:
+            self.record_event("RECORDING_STOP", event_type="record", write_to_csv=False)
+        self.is_live = self.is_recording = False
+        self.recorder.close_csv()
+        try:
+            self.daq.turn_off()
+        except Exception:
+            self.daq.disconnect()

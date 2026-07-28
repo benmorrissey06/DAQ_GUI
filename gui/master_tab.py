@@ -30,9 +30,43 @@ class MasterTab(Toolbox):
                     dpg.add_separator()
                     dpg.add_spacer(height=10)
                     self.draw_general_ctrls(compact=False)
+                    dpg.add_spacer(height = 40)
+                    dpg.add_text("Device Monitor")
+                    dpg.add_separator()
+                    with dpg.group(tag=self.t("devices")):
+                        pass
+                    dpg.add_button(label="+", callback=self.app.add_device_tab)
 
                 with dpg.child_window(width=-1, height=-1):
                     self.draw_recording_ctrls(compact=False)
+                    
+
+    def add_device(self, tab):
+        with dpg.group(parent=self.t("devices"), tag=tab.t("manager")):
+            with dpg.group(horizontal=True):
+                dpg.add_input_text(default_value=tab.name, width=200, callback=self.rename_device, user_data=tab)
+                dpg.add_button(label="X", callback=self.remove_device, user_data=tab)
+                dpg.add_text("", tag=tab.t("delete_warning"))
+            dpg.add_text("", tag=tab.t("device_status"))
+        self.update_device_status(tab)
+
+    def rename_device(self, sender, app_data, tab):
+        tab.name = app_data
+        dpg.configure_item(tab.t("device_tab"), label=app_data)
+        self.update_recording_state()
+
+    def remove_device(self, sender, app_data, tab):
+        if dpg.get_value(tab.t("delete_warning")):
+            self.app.remove_device_tab(tab)
+        else:
+            dpg.set_value(tab.t("delete_warning"), "Are you sure? Click X again to remove this device.")
+
+    def update_device_status(self, tab):
+        dpg.set_value(tab.t("device_status"), f"Live: {'yes' if tab.is_live else 'no'}, Connected: {'yes' if tab.daq.is_open else 'no'}, Recording: {'yes' if tab.is_recording else 'no'}")
+
+    def update_device_statuses(self):
+        for tab in self.app.device_tabs:
+            self.update_device_status(tab)
 
     def collect_info(self, sender, app_data, user_data):
         label = dpg.get_item_label(sender)
@@ -65,11 +99,13 @@ class MasterTab(Toolbox):
                     tab.daq.set_adc_streaming(False)
                     tab.daq.stop_device()
                     tab.record_event("MASTER_LIVE_OFF", value=0, event_type="live")
+        self.update_device_statuses()
 
     def update_recording_state(self):
-        active = [f"Device {tab.tid}" for tab in self.app.device_tabs if tab.is_recording]
+        active = [tab.name for tab in self.app.device_tabs if tab.is_recording]
         dpg.configure_item(self.t("start_all_button"), label="STOP ALL" if active else "START ALL")
         dpg.set_value(self.t("recording_status"), f"Recording: {', '.join(active)}. Stop all before starting again." if active else "")
+        self.update_device_statuses()
 
     def start_all(self, sender, app_data, user_data):
         if any(tab.is_recording for tab in self.app.device_tabs):
@@ -79,9 +115,9 @@ class MasterTab(Toolbox):
         ready = []
         for tab in self.app.device_tabs:
             if not tab.daq.is_open:
-                warnings.append(f"Device {tab.tid} not connected.")
+                warnings.append(f"{tab.name} not connected.")
             elif not tab.is_live:
-                warnings.append(f"Device {tab.tid} not live.")
+                warnings.append(f"{tab.name} not live.")
             else:
                 ready.append(tab)
         if not self.app.device_tabs:
