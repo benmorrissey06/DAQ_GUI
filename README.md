@@ -38,6 +38,7 @@ Also **very modular**, so made up of 7 distinct files, each with a manageable si
 
 - Python 3.12 on macOS; recommended elsewhere.
 - An ESP32-S3 board flashed with [`firmware/firmware.ino`](firmware/firmware.ino) and connected over USB.
+- esp32 board package must be version 3.0 or newer
 - The AD524X Arduino library if rebuilding the firmware. Can be uploaded via Platform IO extension in VS code, or Arduino IDE (more beginner friendly)
 
 ## Setup
