@@ -383,20 +383,17 @@ class Toolbox:
             self.wait_for_input = app_data
 
     def browse_save_directory(self, sender=None, app_data=None, user_data=None):
-        '''
-        file browser pop up
-        '''
-        root = Tk()
-        root.withdraw()
-        root.attributes('-topmost', True)
-        folder = filedialog.askdirectory(title="Select Save Location")
-        root.destroy()
-        if folder:
-            if self.compact:
-                self.recorder.save_directory = folder
-                dpg.set_value(self.t("save_dir_display"), f"Saving to: {folder}")
-            else:
-                dpg.set_value(self.t("save_dir_display"), f"Saving to: {folder}")
-                for tab in self.app.device_tabs:
-                    tab.recorder.save_directory = folder
-                    dpg.set_value(tab.t("save_dir_display"), f"Saving to: {folder}")
+        if not dpg.does_item_exist(self.t("save_dialog")):
+            dpg.add_file_dialog(directory_selector=True, show=False, callback=self.set_save_directory, tag=self.t("save_dialog"), width=700, height=400)
+        dpg.show_item(self.t("save_dialog"))
+
+    def set_save_directory(self, sender, app_data, user_data):
+        folder = app_data["file_path_name"]
+        if self.compact:
+            self.recorder.save_directory = folder
+            dpg.set_value(self.t("save_dir_display"), f"Saving to: {folder}")
+        else:
+            dpg.set_value(self.t("save_dir_display"), f"Saving to: {folder}")
+            for tab in self.app.device_tabs:
+                tab.recorder.save_directory = folder
+                dpg.set_value(tab.t("save_dir_display"), f"Saving to: {folder}")

@@ -1,4 +1,5 @@
 import serial
+import sys
 from serial.tools import list_ports
 import time
 from datetime import datetime
@@ -17,12 +18,8 @@ class DAQController:
         self.running = False
 
     def get_available_ports(self):
-        availablePorts = serial.tools.list_ports.comports()
-        availablePortsStrings = []
-        for a in availablePorts:
-            availablePortsStrings.append(str(a.device))
-        return availablePortsStrings
-    
+        return [port.device for port in list_ports.comports() if sys.platform == "win32" or port.vid is not None or port.device.startswith(("/dev/cu.usb", "/dev/tty.usb", "/dev/ttyUSB", "/dev/ttyACM"))]
+        #^^ This part is since mac and linux show other ports outside of usb devices, so this filters them out
     def connect(self, port_name):
         try:
             connection = serial.Serial(

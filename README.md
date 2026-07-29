@@ -36,7 +36,7 @@ Also very modular, so made up of 7 distinct files, each with a manageable size.
 
 ## Requirements
 
-- Python 3.12 recommended.
+- Python 3.12 on macOS; recommended elsewhere.
 - An ESP32-S3 board flashed with [`firmware/firmware.ino`](firmware/firmware.ino) and connected over USB.
 - The AD524X Arduino library if rebuilding the firmware. Can be uploaded via Platform IO extension in VS code, or Arduino IDE (more beginner friendly)
 
@@ -50,7 +50,13 @@ Windows:
 python -m venv my_venv
 ```
 
-Mac / Linux:
+macOS:
+
+```bash
+python3.12 -m venv my_venv
+```
+
+Linux:
 
 ```bash
 python3 -m venv my_venv
@@ -81,13 +87,13 @@ python -m pip install --upgrade pip
 Mac / Linux:
 
 ```bash
-python3 -m pip install --upgrade pip
+python -m pip install --upgrade pip
 ```
 
 ### 4. Install dependencies
 
 ```bash
-pip install -r requirements.txt
+python -m pip install -r requirements.txt
 ```
 
 ## Run the GUI
@@ -101,7 +107,7 @@ python gui/main.py
 Mac / Linux:
 
 ```bash
-python3 gui/main.py
+python gui/main.py
 ```
 
 ## Usage
@@ -119,6 +125,8 @@ python3 gui/main.py
 ## Multiple Devices
 
 Each DAQ board gets its own tab and its own independent serial connection. The Device Monitor in the Master tab shows whether each device is live, connected, and recording. Device tabs can also be renamed or removed from that monitor.
+
+The save-location picker is built into Dear PyGui, so no separate Tk installation is required. Serial-port names are platform-specific: Windows uses names such as `COM3`, macOS commonly uses `/dev/cu.usbmodem...` or `/dev/cu.usbserial...`, and Linux commonly uses `/dev/ttyACM0` or `/dev/ttyUSB0`.
 
 Master controls apply settings to all connected devices. **START ALL** records the devices that are connected and live, while displaying warnings for devices that are not ready. If an individual recording is already active, stop it before using **START ALL**.
 

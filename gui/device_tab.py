@@ -158,7 +158,6 @@ class DeviceTab(Toolbox):
         availablePortsStrings = self.daq.get_available_ports()
         if availablePortsStrings:
             for port in availablePortsStrings:
-                #linux recognizes ports beyond hardware ports here, so to get it working on those devices, we would have to do a check here. Leaving it as is for now.
                 dpg.add_button(label=port, parent=self.t('com_port_group'), user_data=port, callback=self.connect_port,tag =self.t(f"connect_{port}"))
                 dpg.add_text("", parent=self.t('com_port_group'), tag=self.t(f"connect_error_{port}"))
         else:
