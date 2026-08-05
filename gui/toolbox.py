@@ -76,7 +76,7 @@ class Toolbox:
         if compact:
             dpg.add_separator()
             with dpg.group(horizontal= True):
-                dpg.add_text("LIVE")
+                #dpg.add_text("LIVE")   (description "LIVE" was a little misleading,as this just turns on the device)
                 dpg.add_button(label="OFF", tag=self.t("live_button"), callback=self.live_plot_toggle)
             with dpg.group(tag=self.t("general_status"), show=False):
                 pass
@@ -193,7 +193,6 @@ class Toolbox:
         If we have not clicked set yet, it only updates the value for both, 
         and if we click set,it actually sends the command!
         '''
-         #***VERIFY THAT THIS SETUP WORKS!
         if sender == self.t(f"s_{user_data}") or sender == self.t(f"i_{user_data}"):
             dpg.set_value(self.t(f"s_{user_data}"), app_data)
             dpg.set_value(self.t(f"i_{user_data}"), app_data)
@@ -397,3 +396,32 @@ class Toolbox:
             for tab in self.app.device_tabs:
                 tab.recorder.save_directory = folder
                 dpg.set_value(tab.t("save_dir_display"), f"Saving to: {folder}")
+
+
+    '''
+    Calibration feature:
+    Calibration:
+
+    Put VIS LED to min, take note of VIS PD reading
+    Put VIS LED to max, take note of VIS PD reading
+
+    when saving, have a new column to subtract baseline
+    baseline is average of VIS PD Min and Max
+    '''
+    def calibrate_vis_pd(self, sender=None, app_data=None, user_data=None):
+        min_val = 0
+        max_val = 0
+        if not self.daq.is_open:
+            self.update_general_status()
+            return
+        self.daq.set_visible_pd_gain(0)
+        #sleep(xxxx?) pause for a second or no?
+        #set min_val
+        min_val = self.daq.read_visible_pd()
+        self.daq.set_visible_pd_gain(255)
+        #sleep(xxxx?) pause for a second or no?
+        #get the values from the DAQ, set max_val
+        baseline = (min_val + max_val) / 2
+        return baseline
+
+

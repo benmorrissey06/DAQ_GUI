@@ -227,3 +227,15 @@ The GUI communicates at 115200 baud. Most commands use `COMMAND,VALUE\n`; comman
 | `15` | `0` | Stop schedule execution. |
 | `16` | `0-100` | Set IR LED intensity by duty cycle. (0 is not the literal minimum, but rather the minimum the hardware can support, and 100 means always on during high readings so technically it's 50%) |
 
+
+
+Calibration:
+
+Put VIS LED to min, take note of VIS PD reading
+Put VIS LED to max, take note of VIS PD reading
+
+when saving, have a new column to subtract baseline
+baseline is average of VIS PD Min and Max
+
+
+Make connecting to port be a pop up
