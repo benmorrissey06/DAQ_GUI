@@ -53,6 +53,7 @@ class DeviceTab(Toolbox):
 
         self.is_recording = False
         self.vis_dac_baseline = 0
+        self.vis_pd_off = self.vis_pd_on = self.vis_pd_baseline = None
         self.vis_schedule = []
         self._plot_event_line_tags = {ch: [] for ch in CH_TAGS}
 
@@ -89,9 +90,10 @@ class DeviceTab(Toolbox):
                         with dpg.tab(label="General"):
                             dpg.add_input_text(label="Animal ID", callback=self.set_animal_id)
                             dpg.add_separator()
-                            with dpg.group(tag=self.t('com_port_group')):
-                                self.view_ports()
-                            dpg.add_spacer(height=10)
+                            with dpg.collapsing_header(label='Connect to COM Port', default_open=False):
+                                with dpg.group(tag=self.t('com_port_group')):
+                                    self.view_ports()
+                            #dpg.add_spacer(height=10)
                             #dpg.add_text("Hardware Controls")
                             dpg.add_separator()
                             self.event_colors = EVENT_COLORS
@@ -152,8 +154,6 @@ class DeviceTab(Toolbox):
 
     def view_ports(self):
         dpg.delete_item(self.t('com_port_group'), children_only=True)
-        dpg.add_text('Connect to COM Port:', parent=self.t('com_port_group'))
-        dpg.add_separator(parent=self.t('com_port_group'))
         dpg.add_button(label='Refresh Ports', parent=self.t('com_port_group'), callback=self.refresh_ports)
         availablePortsStrings = self.daq.get_available_ports()
         if availablePortsStrings:
@@ -262,7 +262,8 @@ class DeviceTab(Toolbox):
         self.update_plots(volts + high[2:], time.time())#high[2:] is for channels 3 and 4, and for now, it is raw values NOT volts despite being added to that list. ultimately wed like it to be volts though.
 
         if self.is_recording:
-            self.recorder.write_row(sample_counter, high, low, difference)
+            calibrated = high[1] - self.vis_pd_baseline if self.vis_pd_baseline is not None else None
+            self.recorder.write_row(sample_counter, high, low, difference, calibrated)
 
     def toggle_plots(self, sender, app_data, user_data):
         if app_data == "CH3 (VIS Current)":
@@ -441,6 +442,9 @@ class DeviceTab(Toolbox):
             "vis_gain": vis_gain,
             "ir_gain": ir_gain,
             "vis_dac_code": self.vis_dac_baseline,
+            "vis_pd_off": self.vis_pd_off,
+            "vis_pd_on": self.vis_pd_on,
+            "vis_pd_baseline": self.vis_pd_baseline,
             "recording_duration_s": self.recording_duration,
             "vis_schedule": [{"time_s": time_s, "dac_code": dac_code} for time_s, dac_code in self.vis_schedule],
         }

@@ -16,6 +16,7 @@ class DAQController:
         self.last_response = None
         self.is_live = False
         self.running = False
+        self.vis_led_dac = 0
 
     def get_available_ports(self):
         return [port.device for port in list_ports.comports() if sys.platform == "win32" or port.vid is not None or port.device.startswith(("/dev/cu.usb", "/dev/tty.usb", "/dev/ttyUSB", "/dev/ttyACM"))]
@@ -134,6 +135,7 @@ class DAQController:
 
     def set_vis_led_dac(self, value):
         self.send_command(3, value)
+        self.vis_led_dac = value
 
     def pulse_ir_led(self, value):
         min_val = 49 #49 is the minimum value for IR LED intensity that actually results in some output - anything below is nothing, likely due to time delays
@@ -152,7 +154,17 @@ class DAQController:
 
     def read_single_adc(self):
         self.send_command(8, 0)
-        return self.read_response()
+        deadline = time.time() + 1.0
+        while time.time() < deadline:
+            if self.serial.in_waiting:
+                parts = self.serial.readline().decode("utf-8", errors="ignore").strip().split(",")
+                if parts[0] == "SINGLE_RAW" and len(parts) == 5:
+                    try:
+                        return tuple(int(value) for value in parts[1:])
+                    except ValueError:
+                        pass
+            time.sleep(0.01)
+        return None
 
     def set_adc_streaming(self, enabled):
         self.send_command(9, 1 if enabled else 0)

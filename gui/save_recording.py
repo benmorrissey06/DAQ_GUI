@@ -16,11 +16,11 @@ class DataRecorder:
     def open_csv(self):
         self.csv_file = open(f"{self.file_name}.csv", 'w', newline='')
         self.csv_writer = csv.writer(self.csv_file)
-        self.csv_writer.writerow(["host_time", "sample_counter", "high_ch1", "high_ch2", "high_ch3", "high_ch4", "low_ch1", "low_ch2", "low_ch3", "low_ch4", "difference_ch1", "difference_ch2", "difference_ch3", "difference_ch4", "event"])
+        self.csv_writer.writerow(["host_time", "sample_counter", "high_ch1", "high_ch2", "high_ch3", "high_ch4", "low_ch1", "low_ch2", "low_ch3", "low_ch4", "difference_ch1", "difference_ch2", "difference_ch3", "difference_ch4", "vis_pd_calibrated", "event"])
 
-    def write_row(self, sample_counter=None, high=None, low=None, difference=None, event=""):
+    def write_row(self, sample_counter=None, high=None, low=None, difference=None, vis_pd_calibrated=None, event=""):
         if self.csv_writer:
-            self.csv_writer.writerow([time.time(), sample_counter if sample_counter is not None else ""] + list(high or ["", "", "", ""]) + list(low or ["", "", "", ""]) + list(difference or ["", "", "", ""]) + [event])
+            self.csv_writer.writerow([time.time(), sample_counter if sample_counter is not None else ""] + list(high or ["", "", "", ""]) + list(low or ["", "", "", ""]) + list(difference or ["", "", "", ""]) + [vis_pd_calibrated if vis_pd_calibrated is not None else "", event])
 
     def close_csv(self):
         if self.csv_file:

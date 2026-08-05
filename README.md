@@ -186,7 +186,7 @@ events = df[df["event"].notna()]
 
 ### Metadata Sidecar
 
-A JSON file with the same base name as the CSV is written when recording starts. It captures the cohort, test label, animal ID, COM port, sample rate, stream decimation, gains, VIS DAC baseline, recording duration, and VIS schedule.
+A JSON file with the same base name as the CSV is written when recording starts. It captures the cohort, test label, animal ID, COM port, sample rate, stream decimation, gains, VIS DAC baseline, VIS PD calibration, recording duration, and VIS schedule.
 
 ## Tips and Notes
 
@@ -203,6 +203,7 @@ A JSON file with the same base name as the CSV is written when recording starts.
 | `high_ch1`-`high_ch4` | int | Signed raw ADC counts with the IR LED on; empty on event rows. |
 | `low_ch1`-`low_ch4` | int | Signed raw ADC counts with the IR LED off; empty on event rows. |
 | `difference_ch1`-`difference_ch4` | int | High minus low; empty on event rows. |
+| `vis_pd_calibrated` | float | CH2 high raw count minus the VIS PD baseline; empty before calibration and on event rows. |
 | `event` | string | Event description; empty on normal data rows. |
 
 ## Serial Protocol
@@ -229,13 +230,8 @@ The GUI communicates at 115200 baud. Most commands use `COMMAND,VALUE\n`; comman
 
 
 
-Calibration:
+## VIS PD Calibration
 
-Put VIS LED to min, take note of VIS PD reading
-Put VIS LED to max, take note of VIS PD reading
-
-when saving, have a new column to subtract baseline
-baseline is average of VIS PD Min and Max
-
+With connected devices turned live off, click **Calibrate** above the hardware sliders on a device tab or the Master tab. Each device takes one CH2 sample with the VIS LED off and one with it fully on.  The baseline is their average and `vis_pd_calibrated` is the CH2 high raw count minus that baseline.
 
 Make connecting to port be a pop up

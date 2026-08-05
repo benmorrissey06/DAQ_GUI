@@ -1,4 +1,5 @@
 import dearpygui.dearpygui as dpg
+import time
 from tkinter import Tk, filedialog
 '''
 functions were being repeated in both the master and device tabs, so I made this shared class for efficiency
@@ -49,8 +50,13 @@ class Toolbox:
         return f"{name}_{self.tid}"
 
     def draw_general_ctrls(self, compact):
+        dpg.add_spacer(height = 15)
         slider_defs = DEVICE_SLIDER_DEFS if compact else SLIDER_DEFS
+        with dpg.group(horizontal=True):
+            dpg.add_button(label="Calibrate", callback=self.calibrate)
+            dpg.add_text("", tag=self.t("calibration_status"))
         for label, (max_val, _) in slider_defs.items():
+            #Loop through each slider, which we have stored the data for
             if compact:
                 with dpg.group(horizontal=False):
                     dpg.add_text(f"{label} (0-{max_val})")
@@ -398,30 +404,31 @@ class Toolbox:
                 dpg.set_value(tab.t("save_dir_display"), f"Saving to: {folder}")
 
 
-    '''
-    Calibration feature:
-    Calibration:
-
-    Put VIS LED to min, take note of VIS PD reading
-    Put VIS LED to max, take note of VIS PD reading
-
-    when saving, have a new column to subtract baseline
-    baseline is average of VIS PD Min and Max
-    '''
-    def calibrate_vis_pd(self, sender=None, app_data=None, user_data=None):
-        min_val = 0
-        max_val = 0
-        if not self.daq.is_open:
-            self.update_general_status()
+    def calibrate(self, sender=None, app_data=None, user_data=None):
+        tabs = ([self] if self.daq.is_open else []) if self.compact else [tab for tab in self.app.device_tabs if tab.daq.is_open]
+        live = [tab.name for tab in tabs if tab.is_live]
+        if not tabs or live:
+            message = "No connected devices." if not tabs else f"Turn live off: {', '.join(live)}"
+            dpg.set_value(self.t("calibration_status"), message) #error if we have no devices or something when trying to calibrate
             return
-        self.daq.set_visible_pd_gain(0)
-        #sleep(xxxx?) pause for a second or no?
-        #set min_val
-        min_val = self.daq.read_visible_pd()
-        self.daq.set_visible_pd_gain(255)
-        #sleep(xxxx?) pause for a second or no?
-        #get the values from the DAQ, set max_val
-        baseline = (min_val + max_val) / 2
-        return baseline
-
-
+        results = []
+        for tab in tabs:
+            #cause if we are in master tab
+            original = tab.daq.vis_led_dac
+            try:
+                tab.daq.set_vis_led_dac(0)
+                time.sleep(0.1)
+                off = tab.daq.read_single_adc()
+                tab.daq.set_vis_led_dac(VIS_LED_MAX)
+                time.sleep(0.1)
+                on = tab.daq.read_single_adc()
+                if off is None or on is None:
+                    raise RuntimeError
+                tab.vis_pd_off, tab.vis_pd_on = off[1], on[1]
+                tab.vis_pd_baseline = (tab.vis_pd_off + tab.vis_pd_on) / 2
+                results.append(f"{tab.name}: off {tab.vis_pd_off}, on {tab.vis_pd_on}, baseline {tab.vis_pd_baseline:g}")
+            except (RuntimeError, OSError):
+                results.append(f"{tab.name}: calibration failed")
+            finally:
+                tab.daq.set_vis_led_dac(original)
+        dpg.set_value(self.t("calibration_status"), chr(10).join(results))
