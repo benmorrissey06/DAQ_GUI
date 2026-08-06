@@ -264,7 +264,17 @@ class DeviceTab(Toolbox):
 
         if self.is_recording:
             calibrated = high[1] - self.vis_pd_baseline if self.vis_pd_baseline is not None else None #VIS PD - baseline
-            self.recorder.write_row(sample_counter, high, low, difference, calibrated)
+            try:
+                self.recorder.write_row(sample_counter, high, low, difference, calibrated)
+            except OSError as e:
+                self.is_recording = False
+                with suppress(OSError):
+                    self.recorder.close_csv()
+                self.set_recording_warning([f"Recording stopped: {e}"])
+                self.app.master.update_recording_state()
+                '''
+                Section to make it so recordings dont silently crash
+                '''
 
     def toggle_plots(self, sender, app_data, user_data):
         if app_data == "CH3 (VIS Current)":
@@ -473,9 +483,9 @@ class DeviceTab(Toolbox):
                     self.is_live = False
                     self.daq.disconnect() #close previous connections
                     self.set_general_message("Connection lost.")
-                    self.app.mas1ter.update_device_status(self)
-                except Exception:
-                    pass
+                    self.app.master.update_device_status(self)
+                except Exception as e:
+                    self.set_general_message(f"Acquisition error: {e}") #no silent crashes
             time.sleep(0.01)
 
     def stop_recording_automatically(self):

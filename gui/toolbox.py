@@ -119,7 +119,7 @@ class Toolbox:
         dpg.add_text("Start Recording: ")
         dpg.add_separator()
         if compact:
-            dpg.add_input_float(label="", width=200, default_value=30, min_value=1.0, max_value=3600.0, callback=self.update_recording_duration,tag=self.t("recording_duration_input"))
+            dpg.add_input_float(label="", width=200, default_value=30, step=0, step_fast=0, callback=self.update_recording_duration,tag=self.t("recording_duration_input"))
             dpg.add_text("Recording Duration (s)")
             dpg.add_spacer(height=10)
             dpg.add_separator()
