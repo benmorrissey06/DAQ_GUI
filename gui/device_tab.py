@@ -154,7 +154,7 @@ class DeviceTab(Toolbox):
 
     def view_ports(self):
         dpg.delete_item(self.t('com_port_group'), children_only=True)
-        dpg.add_button(label='Refresh Ports', parent=self.t('com_port_group'), callback=self.refresh_ports)
+        
         availablePortsStrings = self.daq.get_available_ports()
         if availablePortsStrings:
             for port in availablePortsStrings:
@@ -162,6 +162,7 @@ class DeviceTab(Toolbox):
                 dpg.add_text("", parent=self.t('com_port_group'), tag=self.t(f"connect_error_{port}"))
         else:
             dpg.add_text('No COM Ports detected', parent=self.t('com_port_group'))
+        dpg.add_button(label='Refresh Ports', parent=self.t('com_port_group'), callback=self.refresh_ports)
 
     def refresh_ports(self, sender=None, app_data=None, user_data=None):
         self.view_ports()
