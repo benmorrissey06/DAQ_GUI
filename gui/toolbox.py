@@ -414,7 +414,7 @@ class Toolbox:
         results = []
         for tab in tabs:
             #cause if we are in master tab
-            original = tab.daq.vis_led_dac
+            original = tab.daq.vis_led_dac # save original value so after calibrating we can return to it
             try:
                 tab.daq.set_vis_led_dac(0)
                 time.sleep(0.1)
