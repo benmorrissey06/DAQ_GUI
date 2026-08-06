@@ -1,6 +1,6 @@
 import dearpygui.dearpygui as dpg
 import time
-from tkinter import Tk, filedialog
+#from tkinter import Tk, filedialog  We now use the DPG file pop up, so new need for tkinter. it was just one more dependency making setup more difficult
 '''
 functions were being repeated in both the master and device tabs, so I made this shared class for efficiency
 you can draw_general_ctrls and draw_recording_ctrls, and it will handle both the master and device tabs, depending on the compact parameter in the function

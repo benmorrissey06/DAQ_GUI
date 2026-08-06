@@ -237,5 +237,8 @@ With connected devices turned live off, click **Calibrate** above the hardware s
 What does it do? Finds a baseline to subtract in a new column when saving data, which is determined as VIS PD reading with VIS LED at its minimum, plus the reading with VIS PD at its maximum, divided by two.
 
 
+Potential future improvements:
 
-Make connecting to port be a pop up
+Further breaking up into more files, as device_tab and toolbox are growing in size.
+
+Thread ownership - the hardware thread handles many things like plot updates, messages and button changes. May be hard to interpret as this grows, so potentially fix that in the future to make it even more maintainable
