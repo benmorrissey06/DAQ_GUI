@@ -405,7 +405,7 @@ class Toolbox:
 
 
     def calibrate(self, sender=None, app_data=None, user_data=None):
-        tabs = ([self] if self.daq.is_open else []) if self.compact else [tab for tab in self.app.device_tabs if tab.daq.is_open]
+        tabs = ([self] if self.daq.is_open else []) if self.compact else [tab for tab in self.app.device_tabs if tab.daq.is_open] #differentiate between individual and master tabs
         live = [tab.name for tab in tabs if tab.is_live]
         if not tabs or live:
             message = "No connected devices." if not tabs else f"Turn live off: {', '.join(live)}"
@@ -420,12 +420,12 @@ class Toolbox:
                 time.sleep(0.1)
                 off = tab.daq.read_single_adc()
                 tab.daq.set_vis_led_dac(VIS_LED_MAX)
-                time.sleep(0.1)
+                time.sleep(0.1) #this 0.1 may need to be changed
                 on = tab.daq.read_single_adc()
                 if off is None or on is None:
                     raise RuntimeError
                 tab.vis_pd_off, tab.vis_pd_on = off[1], on[1]
-                tab.vis_pd_baseline = (tab.vis_pd_off + tab.vis_pd_on) / 2
+                tab.vis_pd_baseline = (tab.vis_pd_off + tab.vis_pd_on) / 2  #formula for baseline
                 results.append(f"{tab.name}: off {tab.vis_pd_off}, on {tab.vis_pd_on}, baseline {tab.vis_pd_baseline:g}")
             except (RuntimeError, OSError):
                 results.append(f"{tab.name}: calibration failed")

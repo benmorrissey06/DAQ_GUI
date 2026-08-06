@@ -232,6 +232,10 @@ The GUI communicates at 115200 baud. Most commands use `COMMAND,VALUE\n`; comman
 
 ## VIS PD Calibration
 
-With connected devices turned live off, click **Calibrate** above the hardware sliders on a device tab or the Master tab. Each device takes one CH2 sample with the VIS LED off and one with it fully on.  The baseline is their average and `vis_pd_calibrated` is the CH2 high raw count minus that baseline.
+With connected devices turned live off, click **Calibrate** above the hardware sliders on a device tab or the Master tab. Each device takes one CH2 sample with the VIS LED off and one with it fully on.  The baseline is their average and `vis_pd_calibrated` is the CH2 high raw count minus that baseline. (You can also calibrate for just one single device in the device tab if desired)
+
+What does it do? Finds a baseline to subtract in a new column when saving data, which is determined as VIS PD reading with VIS LED at its minimum, plus the reading with VIS PD at its maximum, divided by two.
+
+
 
 Make connecting to port be a pop up

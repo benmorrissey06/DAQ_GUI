@@ -31,6 +31,10 @@ class MasterTab(Toolbox):
                     dpg.add_spacer(height=10)
                     self.draw_general_ctrls(compact=False)
                     dpg.add_spacer(height = 40)
+                    '''
+                    Device monitor to manage devices from master tab
+                    Delete, rename, view status, and add new devices all from here
+                    '''
                     dpg.add_text("Device Monitor")
                     dpg.add_separator()
                     with dpg.group(tag=self.t("devices")):

@@ -262,7 +262,7 @@ class DeviceTab(Toolbox):
         self.update_plots(volts + high[2:], time.time())#high[2:] is for channels 3 and 4, and for now, it is raw values NOT volts despite being added to that list. ultimately wed like it to be volts though.
 
         if self.is_recording:
-            calibrated = high[1] - self.vis_pd_baseline if self.vis_pd_baseline is not None else None
+            calibrated = high[1] - self.vis_pd_baseline if self.vis_pd_baseline is not None else None #VIS PD - baseline
             self.recorder.write_row(sample_counter, high, low, difference, calibrated)
 
     def toggle_plots(self, sender, app_data, user_data):
